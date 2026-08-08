@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B120C">
+<title>V-SHAPE 90</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ====================== HEADER ====================== -->
+<header class="app-header">
+  <div class="brand">
+    <span class="brand-mark">V</span>
+    <div class="brand-text">
+      <strong>V-SHAPE 90</strong>
+      <div class="brand-day-row">
+        <span id="header-day">DIA 1 / 90</span>
+        <div class="brand-progress"><div class="brand-progress-fill" id="header-progress" style="width:1%"></div></div>
+      </div>
+    </div>
+  </div>
+  <button id="btn-more-shortcut" class="icon-btn" title="Configurações">
+    <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="2.6"/>
+      <path d="M11 3.5v2M11 17.5v2M18.5 11h-2M5.5 11h-2M16.2 5.8l-1.4 1.4M7.2 14.8l-1.4 1.4M16.2 16.2l-1.4-1.4M7.2 7.2 5.8 5.8"/>
+    </svg>
+  </button>
+</header>
+
+<main id="app">
+
+  <!-- ====================== VIEW: HOJE ====================== -->
+  <section id="view-hoje" class="view active">
+
+    <div class="card-grid" id="dashboard-cards"></div>
+
+    <div class="panel" id="today-workout-panel">
+      <h3>TREINO DE HOJE</h3>
+      <div id="today-workout-content"></div>
+    </div>
+
+    <div class="panel" id="today-run-panel" style="display:none">
+      <h3>CORRIDA DE HOJE</h3>
+      <div id="today-run-content"></div>
+    </div>
+
+    <div class="panel" id="today-core-panel">
+      <h3>CORE</h3>
+      <div id="today-core-content"></div>
+    </div>
+
+    <div class="panel" id="checkin-panel">
+      <h3>CHECK-IN DE RECUPERAÇÃO</h3>
+      <div id="checkin-content"></div>
+    </div>
+
+    <div class="panel" id="streak-panel">
+      <div class="streak-row">
+        <div class="streak-metric">
+          <svg class="icon-badge" viewBox="0 0 22 22" fill="currentColor" stroke="none">
+            <path d="M11 2c1.1 2.8-1.9 4.1-2.3 6.6-.3 1.9.9 3.1 2.3 3.1a2.7 2.7 0 0 0 2.7-2.7c0-.6-.2-1.1-.5-1.6.2 1.1-.4 1.6-.8 1.3.6-1.6-.7-2.5-.9-4.2A3.6 3.6 0 0 0 11 2z"/>
+            <path d="M8 12.3a3.4 3.4 0 0 0 3.4 3.4c2.2 0 3.9-1.7 3.9-4a5 5 0 0 0-.7-2.5c1.6 1 2.6 2.9 2.6 5A5.9 5.9 0 0 1 11 20a5.6 5.6 0 0 1-5.6-5.6c0-1.7.8-3 1.9-4.1-.1.7 0 1.4.7 2z"/>
+          </svg>
+          <div>
+            <strong id="streak-count">0</strong>
+            <div class="metric-label">dias de sequência</div>
+          </div>
+        </div>
+        <div id="pr-mini" class="pr-mini"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====================== VIEW: TREINO ====================== -->
+  <section id="view-treino" class="view">
+    <div class="tabs" id="day-tabs"></div>
+    <div id="treino-content"></div>
+  </section>
+
+  <!-- MODO TREINO (fullscreen overlay) -->
+  <div id="workout-mode" class="workout-mode hidden">
+    <button id="wm-close" class="icon-btn wm-close">✕</button>
+    <div class="wm-inner">
+      <div class="wm-eyebrow" id="wm-eyebrow">TREINO</div>
+      <div id="wm-demo"></div>
+      <div class="wm-exname" id="wm-exname">EXERCÍCIO</div>
+      <div class="wm-series" id="wm-series">Série 1/4</div>
+      <div class="wm-prev" id="wm-prev">Anterior: --</div>
+      <a class="ex-external-link" id="wm-external-link" href="https://gifdotreino.com/" target="_blank" rel="noopener noreferrer">
+        Ver execução real no Gif do Treino
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3H3v10h10v-3"/><path d="M9 3h4v4"/><path d="M13 3 7 9"/></svg>
+      </a>
+
+      <div class="wm-field">
+        <label>Carga (kg)</label>
+        <div class="stepper">
+          <button id="wm-weight-minus" class="stepper-btn">−</button>
+          <input id="wm-weight" type="number" inputmode="decimal" value="0">
+          <button id="wm-weight-plus" class="stepper-btn">+</button>
+        </div>
+      </div>
+
+      <div class="wm-field">
+        <label>Repetições</label>
+        <div class="stepper">
+          <button id="wm-reps-minus" class="stepper-btn">−</button>
+          <input id="wm-reps" type="number" inputmode="numeric" value="0">
+          <button id="wm-reps-plus" class="stepper-btn">+</button>
+        </div>
+      </div>
+
+      <label class="wm-pain-check">
+        <input type="checkbox" id="wm-pain"> Senti dor nesta série
+      </label>
+
+      <button id="wm-conclude" class="btn-primary btn-lg">✓ CONCLUIR SÉRIE</button>
+
+      <div id="wm-rest" class="wm-rest hidden">
+        <div class="wm-rest-label">DESCANSO</div>
+        <div class="wm-rest-time" id="wm-rest-time">01:30</div>
+        <div class="wm-rest-options" id="wm-rest-options"></div>
+        <button id="wm-skip-rest" class="btn-ghost">Pular descanso</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================== VIEW: CORRIDA ====================== -->
+  <section id="view-corrida" class="view">
+    <div class="panel">
+      <h3>PLANO DA SEMANA</h3>
+      <div id="run-plan-content"></div>
+    </div>
+    <div class="panel">
+      <h3>REGISTRAR CORRIDA</h3>
+      <form id="run-form" class="form-grid">
+        <label>Tipo
+          <select id="run-type">
+            <option value="leve">Corrida leve</option>
+            <option value="intervalado">Intervalado</option>
+            <option value="longao">Longão</option>
+          </select>
+        </label>
+        <label>Distância (km)
+          <input id="run-distance" type="number" step="0.01" min="0" required>
+        </label>
+        <label>Duração (min)
+          <input id="run-duration" type="number" step="0.1" min="0" required>
+        </label>
+        <label>Esforço percebido (1-10)
+          <input id="run-rpe" type="number" min="1" max="10">
+        </label>
+        <label>FC média (opcional)
+          <input id="run-hr" type="number" min="0">
+        </label>
+        <label class="span-2">Observações
+          <textarea id="run-notes" rows="2"></textarea>
+        </label>
+        <button type="submit" class="btn-primary span-2">Salvar corrida</button>
+      </form>
+    </div>
+    <div class="panel">
+      <h3>EVOLUÇÃO DO PACE</h3>
+      <canvas id="run-pace-chart" class="chart-canvas"></canvas>
+    </div>
+    <div class="panel">
+      <h3>HISTÓRICO</h3>
+      <div id="run-history"></div>
+    </div>
+  </section>
+
+  <!-- ====================== VIEW: EVOLUÇÃO ====================== -->
+  <section id="view-evolucao" class="view">
+    <div class="panel">
+      <h3>ÍNDICE V-SHAPE</h3>
+      <div id="vindex-content"></div>
+      <canvas id="vindex-chart" class="chart-canvas"></canvas>
+    </div>
+
+    <div class="panel">
+      <h3>REGISTRO SEMANAL DE MEDIDAS</h3>
+      <form id="body-form" class="form-grid">
+        <label>Peso (kg)<input id="bf-weight" type="number" step="0.1" required></label>
+        <label>Cintura (cm)<input id="bf-waist" type="number" step="0.1"></label>
+        <label>Ombros (cm)<input id="bf-shoulders" type="number" step="0.1"></label>
+        <label>Peito (cm)<input id="bf-chest" type="number" step="0.1"></label>
+        <label>Braço D (cm)<input id="bf-armr" type="number" step="0.1"></label>
+        <label>Braço E (cm)<input id="bf-arml" type="number" step="0.1"></label>
+        <label>Coxa (cm)<input id="bf-thigh" type="number" step="0.1"></label>
+        <button type="submit" class="btn-primary span-2">Salvar medidas</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h3>PESO — HISTÓRICO</h3>
+      <canvas id="weight-chart" class="chart-canvas"></canvas>
+    </div>
+
+    <div class="panel">
+      <h3>FOTOS DE PROGRESSO</h3>
+      <div class="photo-upload-row">
+        <label>Ângulo
+          <select id="photo-type">
+            <option value="frente">Frente</option>
+            <option value="costas">Costas</option>
+            <option value="perfil">Perfil</option>
+          </select>
+        </label>
+        <input type="file" id="photo-input" accept="image/*" capture="environment">
+      </div>
+      <div id="photo-gallery" class="photo-gallery"></div>
+    </div>
+
+    <div class="panel">
+      <h3>COMPARAÇÃO POR SEMANA</h3>
+      <div id="week-compare-controls" class="week-compare-controls"></div>
+      <div id="week-compare-content"></div>
+    </div>
+
+    <div class="panel">
+      <h3>
+        <svg class="icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 4h8v3a4 4 0 0 1-8 0V4z"/>
+          <path d="M7 5H4.5a2 2 0 0 0 0 4H7M15 5h2.5a2 2 0 0 1 0 4H15"/>
+          <path d="M11 11v3M8.5 17h5M9 17c0-1.2.5-2 2-2s2 .8 2 2"/>
+        </svg>
+        Recordes
+      </h3>
+      <div id="records-content"></div>
+    </div>
+
+    <div class="panel">
+      <h3>CHECKPOINTS 30 / 60 / 90</h3>
+      <div id="checkpoints-content"></div>
+    </div>
+
+    <div class="panel">
+      <h3>RELATÓRIO SEMANAL</h3>
+      <div id="weekly-report-content"></div>
+      <button id="btn-generate-report" class="btn-secondary">Gerar relatório desta semana</button>
+    </div>
+  </section>
+
+  <!-- ====================== VIEW: MAIS ====================== -->
+  <section id="view-mais" class="view">
+
+    <div class="panel">
+      <h3>
+        <svg class="icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 3s5.5 6.2 5.5 10a5.5 5.5 0 1 1-11 0C5.5 9.2 11 3 11 3z"/>
+        </svg>
+        Água
+      </h3>
+      <div id="water-content"></div>
+    </div>
+
+    <div class="panel">
+      <h3>ALIMENTAÇÃO</h3>
+      <div id="nutrition-content"></div>
+    </div>
+
+    <div class="panel">
+      <h3>CONFIGURAÇÕES</h3>
+      <form id="settings-form" class="form-grid">
+        <label>Meta de água (mL)<input id="set-water" type="number" min="0"></label>
+        <label>Meta de calorias (kcal)<input id="set-cal" type="number" min="0"></label>
+        <label>Meta de proteína (g)<input id="set-prot" type="number" min="0"></label>
+        <label>Meta de carboidrato (g)<input id="set-carb" type="number" min="0"></label>
+        <label>Meta de gordura (g)<input id="set-fat" type="number" min="0"></label>
+        <label>Descanso padrão (s)<input id="set-rest" type="number" min="0"></label>
+        <button type="submit" class="btn-primary span-2">Salvar configurações</button>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h3>BACKUP</h3>
+      <p class="muted">Todos os dados ficam salvos apenas neste dispositivo. Exporte regularmente.</p>
+      <div class="backup-row">
+        <button id="btn-export" class="btn-primary">Exportar backup</button>
+        <label class="btn-secondary file-label">
+          Importar backup
+          <input type="file" id="import-input" accept="application/json" hidden>
+        </label>
+      </div>
+      <div id="backup-status" class="muted"></div>
+    </div>
+
+    <div class="panel">
+      <h3>SOBRE</h3>
+      <p class="muted">V-SHAPE 90 · PWA pessoal · dados 100% locais neste dispositivo.</p>
+      <button id="btn-reset-all" class="btn-danger">Apagar todos os dados</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- ====================== NAV INFERIOR ====================== -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-view="hoje">
+    <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 10.5 11 4l8 6.5"/>
+      <path d="M5 9.5V18a1 1 0 0 0 1 1h4v-5h2v5h4a1 1 0 0 0 1-1V9.5"/>
+    </svg>
+    <small>Hoje</small>
+  </button>
+  <button class="nav-btn" data-view="treino">
+    <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2.5 11h2M17.5 11h2"/>
+      <rect x="4.6" y="7.8" width="2.4" height="6.4" rx="0.8"/>
+      <rect x="15" y="7.8" width="2.4" height="6.4" rx="0.8"/>
+      <path d="M7 11h8"/>
+    </svg>
+    <small>Treino</small>
+  </button>
+  <button class="nav-btn" data-view="corrida">
+    <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="12" r="7"/>
+      <path d="M11 12V8.3"/>
+      <path d="M8.5 2.6h5"/>
+      <path d="M11 2.6V4"/>
+    </svg>
+    <small>Corrida</small>
+  </button>
+  <button class="nav-btn" data-view="evolucao">
+    <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3.5 17.5V9.5M8.5 17.5V5.5M13.5 17.5v-6M18.5 17.5V3.5"/>
+    </svg>
+    <small>Evolução</small>
+  </button>
+  <button class="nav-btn" data-view="mais">
+    <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 6.5h14M4 11h14M4 15.5h14"/>
+    </svg>
+    <small>Mais</small>
+  </button>
+</nav>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="js/storage.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/exercise-demos.js"></script>
+<script src="js/workouts.js"></script>
+<script src="js/running.js"></script>
+<script src="js/recovery.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

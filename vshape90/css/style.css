@@ -1,0 +1,674 @@
+/* ============================================================
+   V-SHAPE 90 — style.css
+   Tema: alinhado à identidade visual do FitMaster AI (referência
+   do usuário) — fundo verde-escuro quase preto, acento lima vibrante,
+   headlines em caixa-alta com peso forte. Elemento de assinatura
+   mantido: recorte "taper" (V) no brand mark e nas barras de progresso.
+   ============================================================ */
+
+:root {
+  /* Superfícies */
+  --bg: #0B120C;
+  --surface: #131F14;
+  --surface-2: #1A2A1C;
+  --surface-3: #223522;
+  --border: #263826;
+  --border-strong: #385038;
+
+  /* Texto */
+  --text: #F1F5EC;
+  --text-secondary: #9BAB98;
+  --text-tertiary: #647263;
+
+  /* Acento primário: lima vibrante */
+  --accent: #C6FA3E;
+  --accent-deep: #9FDE1D;
+  --accent-ink: #0E1A0A;
+  --accent-soft: rgba(198,250,62,0.14);
+
+  /* Acento secundário (gráficos, dados de corrida) */
+  --mint: #57D9A3;
+  --mint-soft: rgba(87,217,163,0.14);
+
+  /* Estados */
+  --positive: #3DDC84;
+  --positive-soft: rgba(61,220,132,0.14);
+  --warning: #EFC13B;
+  --warning-soft: rgba(239,193,59,0.14);
+  --danger: #F0656B;
+  --danger-soft: rgba(240,101,107,0.16);
+
+  /* Sistema */
+  --radius-lg: 18px;
+  --radius: 14px;
+  --radius-sm: 10px;
+  --nav-h: 66px;
+  --header-h: 60px;
+  --shadow-1: 0 1px 2px rgba(0,0,0,0.35);
+  --shadow-2: 0 10px 26px rgba(0,0,0,0.45);
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  font-feature-settings: "tnum" 1;
+}
+
+body {
+  padding-top: var(--header-h);
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 8px);
+  min-height: 100vh;
+  background-image: radial-gradient(620px 300px at 50% -12%, rgba(198,250,62,0.06), transparent 60%);
+  background-repeat: no-repeat;
+}
+
+/* Headlines em caixa-alta, peso forte, tracking levemente negativo —
+   aproxima o efeito "condensado" do print de referência usando fontes
+   do sistema (mantém o app 100% offline, sem depender de CDN de fontes). */
+h1, h2, h3, h4 {
+  margin: 0 0 10px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  font-family: 'Arial Narrow', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+h3 {
+  font-size: 15px;
+  text-transform: uppercase;
+  color: var(--text);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+h3 .icon { width: 15px; height: 15px; color: var(--accent); flex: none; }
+p { margin: 0 0 8px; line-height: 1.45; }
+.muted { color: var(--text-secondary); font-size: 13px; }
+::selection { background: var(--accent-soft); color: var(--text); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+button { font-family: inherit; cursor: pointer; }
+svg { display: block; }
+
+/* ---------- Header ---------- */
+.app-header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  background: rgba(11,18,12,0.88);
+  backdrop-filter: blur(14px) saturate(1.2);
+  border-bottom: 1px solid var(--border);
+  z-index: 50;
+}
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.brand-mark {
+  width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 900; font-size: 14px;
+  background: linear-gradient(155deg, var(--accent) 0%, var(--accent-deep) 100%);
+  clip-path: polygon(50% 100%, 4% 0%, 96% 0%);
+  color: var(--accent-ink);
+  padding-top: 5px;
+  flex: none;
+  box-shadow: 0 2px 12px rgba(198,250,62,0.3);
+}
+.brand-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.brand-text strong {
+  font-size: 14px; letter-spacing: 0.02em; color: var(--text);
+  font-family: 'Arial Narrow', sans-serif; font-weight: 800; text-transform: uppercase;
+}
+.brand-day-row { display: flex; align-items: center; gap: 8px; }
+.brand-day-row span { font-size: 10.5px; color: var(--accent); font-weight: 800; letter-spacing: 0.04em; white-space: nowrap; }
+.brand-progress { width: 64px; height: 4px; background: var(--surface-3); border-radius: 3px; overflow: hidden; flex: none; }
+.brand-progress-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.4s var(--ease); }
+
+.icon-btn {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex: none;
+  transition: border-color 0.15s var(--ease), color 0.15s var(--ease);
+}
+.icon-btn svg { width: 17px; height: 17px; }
+.icon-btn:active { border-color: var(--border-strong); color: var(--text); }
+
+/* ---------- Layout / views ---------- */
+main#app { padding: 16px; max-width: 640px; margin: 0 auto; }
+.view { display: none; }
+.view.active { display: block; animation: fadein 0.22s var(--ease); }
+@keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-1);
+}
+
+/* ---------- Dashboard cards ---------- */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.dash-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px 14px 14px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-1);
+}
+.dash-card::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--border-strong);
+}
+.dash-card.accent::before { background: var(--accent); }
+.dash-card .label { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700; }
+.dash-card .value { font-size: 20px; font-weight: 800; margin-top: 5px; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.dash-card .sub { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+.dash-card.wide { grid-column: span 2; }
+.dash-card .value.green { color: var(--positive); }
+.dash-card .value.yellow { color: var(--warning); }
+.dash-card .value.red { color: var(--danger); }
+
+/* ---------- Taper bar (elemento de assinatura visual) ---------- */
+.taper-track {
+  height: 8px;
+  background: var(--surface-2);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+.taper-fill {
+  height: 100%;
+  border-radius: 6px;
+  background: var(--accent);
+  transition: width 0.4s var(--ease);
+}
+
+.taper-divider {
+  display: flex; align-items: center; gap: 10px;
+  margin: 2px 0 14px;
+}
+.taper-divider::before {
+  content: '';
+  width: 10px; height: 10px;
+  background: linear-gradient(155deg, var(--accent), var(--accent-deep));
+  clip-path: polygon(50% 100%, 4% 0%, 96% 0%);
+  flex: none;
+}
+.taper-divider .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); font-weight: 700; }
+
+/* ---------- Buttons ---------- */
+.btn-primary, .btn-secondary, .btn-ghost, .btn-danger {
+  border: none;
+  border-radius: var(--radius);
+  padding: 13px 18px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  width: 100%;
+  transition: transform 0.08s var(--ease), filter 0.15s var(--ease), background 0.15s var(--ease), border-color 0.15s var(--ease);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-primary { background: var(--accent); color: var(--accent-ink); }
+.btn-primary:active { filter: brightness(0.92); transform: scale(0.99); }
+.btn-secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border-strong); }
+.btn-secondary:active { background: var(--surface-3); }
+.btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
+.btn-ghost:active { border-color: var(--border-strong); }
+.btn-danger { background: var(--danger-soft); color: var(--danger); border: 1px solid rgba(240,101,107,0.35); }
+.btn-lg { padding: 17px; font-size: 16.5px; border-radius: 16px; }
+.btn-sm { padding: 7px 12px; font-size: 12.5px; width: auto; }
+
+/* ---------- Forms ---------- */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  gap: 6px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.form-grid .span-2 { grid-column: span 2; }
+input, select, textarea {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  padding: 11px 13px;
+  font-size: 14.5px;
+  font-family: inherit;
+  width: 100%;
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface-3);
+}
+textarea { resize: vertical; }
+
+/* ---------- Tabs / pill selectors (estilo "Full Body / ABC / ABCD") ---------- */
+.tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 3px 3px 12px;
+  margin-bottom: 2px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab-btn {
+  flex: 0 0 auto;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition: all 0.15s var(--ease);
+}
+.tab-btn.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+/* ---------- Exercise list ---------- */
+.exercise-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 15px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-1);
+}
+.exercise-card .ex-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.exercise-card .ex-head-row { display: flex; align-items: flex-start; gap: 12px; }
+.exercise-card .ex-name { font-weight: 700; font-size: 14.5px; letter-spacing: -0.01em; }
+.exercise-card .ex-meta { font-size: 12px; color: var(--text-tertiary); margin-top: 3px; font-variant-numeric: tabular-nums; }
+.exercise-card .ex-suggestion {
+  margin-top: 10px;
+  font-size: 12.5px;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  border-left: 3px solid var(--border-strong);
+}
+.ex-suggestion.success { color: var(--positive); background: var(--positive-soft); border-left-color: var(--positive); }
+.ex-suggestion.warning { color: var(--danger); background: var(--danger-soft); border-left-color: var(--danger); }
+.ex-suggestion.info { color: var(--warning); background: var(--warning-soft); border-left-color: var(--warning); }
+.ex-suggestion.neutral { color: var(--text-secondary); }
+.exercise-card .ex-actions { display: flex; gap: 8px; margin-top: 12px; }
+.exercise-card .ex-actions button { flex: 1; }
+.ex-external-link {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin-top: 10px; padding: 9px; border-radius: var(--radius-sm);
+  font-size: 12px; font-weight: 700; text-decoration: none;
+  color: var(--text-tertiary); border: 1px dashed var(--border-strong);
+  transition: color 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+.ex-external-link:active { color: var(--accent); border-color: var(--accent); }
+.ex-external-link svg { width: 13px; height: 13px; flex: none; }
+.ex-history-row {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
+  font-size: 12.5px; padding: 8px 0; border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums; color: var(--text-secondary);
+}
+.ex-history-row:first-child { color: var(--text-tertiary); font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
+.ex-history-row:last-child { border-bottom: none; }
+.ex-history-row span:nth-child(2) { text-align: center; }
+.ex-history-row span:nth-child(3) { text-align: right; }
+
+.rest-chip {
+  font-size: 11px; padding: 4px 9px; border-radius: 20px;
+  background: var(--surface-2); color: var(--text-tertiary);
+  border: 1px solid var(--border);
+  display: inline-flex; align-items: center; gap: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Linha de navegação estilo "Agenda de treino" (dia + resumo + seta) */
+.day-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 16px; margin-bottom: 10px;
+}
+.day-row .day-name { font-weight: 800; font-size: 15px; }
+.day-row .day-summary { color: var(--accent); font-weight: 700; font-size: 13px; margin-top: 3px; }
+.day-row .chevron { color: var(--text-tertiary); flex: none; }
+
+/* ---------- Modo Treino (fullscreen) ---------- */
+.workout-mode {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  z-index: 200;
+  display: flex; flex-direction: column;
+  padding: 20px;
+  padding-top: max(20px, env(safe-area-inset-top));
+}
+.workout-mode.hidden { display: none; }
+.wm-close { position: absolute; top: 18px; right: 18px; }
+.wm-inner { margin: auto; width: 100%; max-width: 420px; text-align: center; }
+.wm-eyebrow { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); font-weight: 800; margin-bottom: 8px; }
+.wm-exname {
+  font-size: 24px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 8px; text-transform: uppercase;
+  font-family: 'Arial Narrow', sans-serif;
+}
+.wm-series { color: var(--text); font-weight: 700; margin-bottom: 4px; font-size: 13.5px; }
+.wm-prev { color: var(--text-tertiary); font-size: 13px; margin-bottom: 26px; font-variant-numeric: tabular-nums; }
+.wm-field { margin-bottom: 16px; text-align: left; }
+.wm-field label { font-size: 11px; color: var(--text-tertiary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
+.stepper { display: flex; align-items: stretch; gap: 8px; margin-top: 7px; }
+.stepper input {
+  text-align: center; font-size: 24px; font-weight: 800;
+  font-variant-numeric: tabular-nums; background: var(--surface-2); border-color: var(--border-strong);
+}
+.stepper-btn {
+  width: 52px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 700;
+  border-radius: 12px;
+  transition: background 0.15s var(--ease);
+}
+.stepper-btn:active { background: var(--surface-3); }
+.wm-pain-check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-secondary); margin-bottom: 20px; justify-content: center; }
+.wm-pain-check input { width: 17px; height: 17px; accent-color: var(--danger); }
+.wm-rest { margin-top: 24px; }
+.wm-rest.hidden { display: none; }
+.wm-rest-label { font-size: 11px; letter-spacing: 0.12em; color: var(--text-tertiary); font-weight: 700; text-transform: uppercase; }
+.wm-rest-time { font-size: 46px; font-weight: 800; color: var(--accent); margin: 8px 0 16px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.wm-rest-options { display: flex; gap: 6px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+.wm-rest-options button {
+  background: var(--surface-2); border: 1px solid var(--border); color: var(--text-secondary);
+  padding: 7px 11px; border-radius: 9px; font-size: 12.5px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.wm-rest-options button.active { color: var(--accent-ink); border-color: var(--accent); background: var(--accent); }
+
+/* ---------- Check-in / recovery ---------- */
+.scale-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.scale-row .scale-label { flex: 0 0 92px; font-size: 12.5px; color: var(--text-secondary); font-weight: 600; }
+.scale-btns { display: flex; gap: 5px; flex: 1; }
+.scale-btns button {
+  flex: 1; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-tertiary);
+  border-radius: 8px; padding: 8px 0; font-weight: 700; font-size: 13px;
+  transition: all 0.12s var(--ease);
+}
+.scale-btns button.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.pain-toggle { display: flex; gap: 8px; margin-bottom: 10px; }
+.pain-toggle button { flex: 1; padding: 9px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--border); color: var(--text-secondary); font-weight: 700; }
+.pain-toggle button.active { background: var(--danger-soft); color: var(--danger); border-color: rgba(240,101,107,0.4); }
+
+.semaphore-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 14px; border-radius: 12px; font-weight: 800; font-size: 13px; margin-top: 4px;
+}
+.semaphore-badge.green { background: var(--positive-soft); color: var(--positive); }
+.semaphore-badge.yellow { background: var(--warning-soft); color: var(--warning); }
+.semaphore-badge.red { background: var(--danger-soft); color: var(--danger); }
+.semaphore-badge.gray { background: var(--surface-2); color: var(--text-tertiary); }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; box-shadow: 0 0 0 3px currentColor; opacity: 0.95; }
+.status-dot.green { background: var(--positive); color: var(--positive-soft); }
+.status-dot.yellow { background: var(--warning); color: var(--warning-soft); }
+.status-dot.red { background: var(--danger); color: var(--danger-soft); }
+.status-dot.gray { background: var(--text-tertiary); color: var(--surface-3); }
+
+/* ---------- Streak / PR panel ---------- */
+.streak-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.streak-metric { display: flex; align-items: center; gap: 10px; }
+.streak-metric .icon-badge { color: var(--accent); }
+.streak-metric strong { font-size: 21px; font-weight: 800; letter-spacing: -0.01em; }
+.streak-metric .metric-label { font-size: 11px; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+.pr-mini { font-size: 12px; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; text-align: right; }
+.pr-mini .icon { width: 14px; height: 14px; color: var(--accent); flex: none; }
+.icon-badge { width: 20px; height: 20px; flex: none; }
+
+/* ---------- Chart canvas ---------- */
+.chart-canvas { width: 100%; height: 170px; display: block; }
+
+/* ============================================================
+   Animações de execução dos exercícios (boneco-palito original,
+   sem imagens/gifs de terceiros — ver js/exercise-demos.js)
+   ============================================================ */
+.exercise-demo { flex: none; color: var(--accent); }
+.exercise-demo-sm { width: 46px; height: 64px; }
+.exercise-demo-lg { width: 92px; height: 128px; margin: 0 auto 10px; }
+.exercise-demo-svg { width: 100%; height: 100%; overflow: visible; }
+.exercise-demo-svg .rig-head { color: var(--text); }
+
+/* Origem de rotação de cada segmento do boneco, usando as coordenadas
+   reais do viewBox (ombro, cotovelo, quadril, joelho) — é isso que faz
+   cada segmento girar a partir da articulação correta. */
+.exercise-demo-svg .rig-torso { transform-origin: 50px 78px; }
+.exercise-demo-svg .rig-upperarm { transform-origin: 50px 36px; }
+.exercise-demo-svg .rig-forearm { transform-origin: 66px 52px; }
+.exercise-demo-svg .rig-thigh { transform-origin: 50px 78px; }
+.exercise-demo-svg .rig-shin { transform-origin: 46px 106px; }
+
+/* Puxada vertical (barra fixa, puxada alta, pulldown) */
+.pattern-pull-vertical .rig-upperarm { animation: demoPullVert 1.7s ease-in-out infinite; }
+@keyframes demoPullVert { 0%, 100% { transform: rotate(-75deg); } 50% { transform: rotate(5deg); } }
+
+/* Remada (puxada horizontal) */
+.pattern-row .rig-upperarm { animation: demoRowUpper 1.7s ease-in-out infinite; }
+@keyframes demoRowUpper { 0%, 100% { transform: rotate(-15deg); } 50% { transform: rotate(55deg); } }
+.pattern-row .rig-forearm { animation: demoRowFore 1.7s ease-in-out infinite; }
+@keyframes demoRowFore { 0%, 100% { transform: rotate(10deg); } 50% { transform: rotate(65deg); } }
+
+/* Empurrar horizontal (supino) */
+.pattern-press-h .rig-upperarm { transform: rotate(-78deg); }
+.pattern-press-h .rig-forearm { animation: demoPressH 1.6s ease-in-out infinite; }
+@keyframes demoPressH { 0%, 100% { transform: rotate(95deg); } 50% { transform: rotate(10deg); } }
+
+/* Empurrar vertical (desenvolvimento) */
+.pattern-press-v .rig-upperarm { animation: demoPressV 1.8s ease-in-out infinite; }
+@keyframes demoPressV { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(-165deg); } }
+
+/* Voador (crucifixo, crossover, pullover) */
+.pattern-fly .rig-upperarm { animation: demoFly 1.8s ease-in-out infinite; }
+@keyframes demoFly { 0%, 100% { transform: rotate(-100deg); } 50% { transform: rotate(-15deg); } }
+
+/* Rosca (bíceps) */
+.pattern-curl .rig-upperarm { transform: rotate(3deg); }
+.pattern-curl .rig-forearm { animation: demoCurl 1.3s ease-in-out infinite; }
+@keyframes demoCurl { 0%, 100% { transform: rotate(10deg); } 50% { transform: rotate(135deg); } }
+
+/* Tríceps */
+.pattern-triceps .rig-upperarm { transform: rotate(-22deg); }
+.pattern-triceps .rig-forearm { animation: demoTriceps 1.3s ease-in-out infinite; }
+@keyframes demoTriceps { 0%, 100% { transform: rotate(135deg); } 50% { transform: rotate(20deg); } }
+
+/* Elevação lateral */
+.pattern-lateral .rig-upperarm { animation: demoLateral 1.6s ease-in-out infinite; }
+@keyframes demoLateral { 0%, 100% { transform: rotate(5deg); } 50% { transform: rotate(-95deg); } }
+
+/* Deltoide posterior / face pull */
+.pattern-reardelt .rig-upperarm { animation: demoRearUpper 1.8s ease-in-out infinite; }
+@keyframes demoRearUpper { 0%, 100% { transform: rotate(-65deg); } 50% { transform: rotate(18deg); } }
+.pattern-reardelt .rig-forearm { animation: demoRearFore 1.8s ease-in-out infinite; }
+@keyframes demoRearFore { 0%, 100% { transform: rotate(20deg); } 50% { transform: rotate(90deg); } }
+
+/* Encolhimento (trapézio) */
+.pattern-shrug .rig-torso { animation: demoShrug 1.2s ease-in-out infinite; }
+@keyframes demoShrug { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+/* Agachamento / leg press */
+.pattern-squat .rig-torso { animation: demoSquatTorso 1.9s ease-in-out infinite; }
+@keyframes demoSquatTorso { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(12deg); } }
+.pattern-squat .rig-thigh { animation: demoSquatThigh 1.9s ease-in-out infinite; }
+@keyframes demoSquatThigh { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(35deg); } }
+.pattern-squat .rig-shin { animation: demoSquatShin 1.9s ease-in-out infinite; }
+@keyframes demoSquatShin { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-55deg); } }
+
+/* Dobradiça de quadril (stiff) */
+.pattern-hinge .rig-torso { animation: demoHinge 1.9s ease-in-out infinite; }
+@keyframes demoHinge { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(46deg); } }
+.pattern-hinge .rig-thigh { animation: demoHingeThigh 1.9s ease-in-out infinite; }
+@keyframes demoHingeThigh { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(6deg); } }
+
+/* Cadeira extensora */
+.pattern-legext .rig-thigh { transform: rotate(60deg); }
+.pattern-legext .rig-shin { animation: demoLegExt 1.6s ease-in-out infinite; }
+@keyframes demoLegExt { 0%, 100% { transform: rotate(-70deg); } 50% { transform: rotate(0deg); } }
+
+/* Mesa flexora */
+.pattern-legcurl .rig-shin { animation: demoLegCurl 1.6s ease-in-out infinite; }
+@keyframes demoLegCurl { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-100deg); } }
+
+/* Panturrilha */
+.pattern-calf .rig-root { animation: demoCalf 1.1s ease-in-out infinite; }
+@keyframes demoCalf { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+/* Core (prancha, dead bug, bird dog, abdominais) */
+.pattern-core .rig-torso { transform: rotate(78deg); }
+.pattern-core .rig-thigh { transform: rotate(-6deg); }
+.pattern-core .rig-root { animation: demoCoreHold 2.2s ease-in-out infinite; transform-origin: 50px 78px; }
+@keyframes demoCoreHold { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .exercise-demo-svg [class^="rig-"] { animation: none !important; }
+}
+
+
+/* ---------- Photo gallery ---------- */
+.photo-upload-row { display: flex; gap: 10px; align-items: flex-end; margin-bottom: 14px; flex-wrap: wrap; }
+.photo-upload-row label { display: flex; flex-direction: column; font-size: 11px; color: var(--text-tertiary); gap: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; }
+.photo-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.photo-item { position: relative; border-radius: var(--radius-sm); overflow: hidden; aspect-ratio: 3/4; background: var(--surface-2); border: 1px solid var(--border); }
+.photo-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-item .photo-tag {
+  position: absolute; bottom: 5px; left: 5px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  background: rgba(11,18,12,0.78); backdrop-filter: blur(4px); padding: 3px 7px; border-radius: 6px;
+}
+.photo-item .photo-del {
+  position: absolute; top: 5px; right: 5px; background: rgba(11,18,12,0.78); border: none; color: #fff;
+  width: 21px; height: 21px; border-radius: 50%; font-size: 11px; display: flex; align-items: center; justify-content: center;
+}
+
+/* ---------- Week compare ---------- */
+.week-compare-controls { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+.week-compare-controls select { width: auto; }
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.compare-col { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
+.compare-col img { width: 100%; border-radius: var(--radius-sm); margin-bottom: 8px; aspect-ratio: 3/4; object-fit: cover; }
+.compare-col strong { font-size: 12.5px; letter-spacing: 0.02em; }
+
+/* ---------- PR list ---------- */
+.pr-list { display: flex; flex-direction: column; gap: 8px; }
+.pr-item {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius); padding: 11px 13px; font-size: 13px;
+}
+.pr-item .pr-value { color: var(--accent); font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* ---------- Nutrition / water ---------- */
+.meal-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+.meal-row:last-child { border-bottom: none; }
+.meal-row .meal-name { font-weight: 700; }
+.meal-row .meal-macro { color: var(--text-tertiary); font-size: 11.5px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.progress-bar { height: 8px; background: var(--surface-2); border-radius: 6px; overflow: hidden; margin: 8px 0 12px; }
+.progress-bar .fill { height: 100%; background: var(--accent); border-radius: 6px; transition: width 0.3s var(--ease); }
+.water-btns { display: flex; gap: 8px; margin-top: 12px; }
+.water-btns button { flex: 1; }
+
+/* ---------- Backup ---------- */
+.backup-row { display: flex; gap: 10px; }
+.file-label { text-align: center; cursor: pointer; }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed; left: 50%; bottom: calc(var(--nav-h) + 18px);
+  transform: translateX(-50%);
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  padding: 11px 18px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 300;
+  box-shadow: var(--shadow-2);
+  transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
+}
+.toast.hidden { display: none; }
+
+/* ---------- Bottom nav ---------- */
+.bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: rgba(17,27,18,0.92);
+  backdrop-filter: blur(16px) saturate(1.2);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 100;
+}
+.nav-btn {
+  flex: 1;
+  background: none; border: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  position: relative;
+  transition: color 0.15s var(--ease);
+}
+.nav-btn svg { width: 21px; height: 21px; transition: transform 0.15s var(--ease); }
+.nav-btn.active { color: var(--accent); }
+.nav-btn.active svg { transform: translateY(-1px); }
+.nav-btn.active::before {
+  content: '';
+  position: absolute; top: 2px; left: 50%; transform: translateX(-50%);
+  width: 18px; height: 2.5px; border-radius: 2px; background: var(--accent);
+}
+
+/* ---------- Responsividade desktop ---------- */
+@media (min-width: 700px) {
+  main#app { padding: 24px; }
+  .card-grid { grid-template-columns: repeat(4, 1fr); }
+  .dash-card.wide { grid-column: span 2; }
+  .compare-grid { grid-template-columns: repeat(4, 1fr); }
+  .panel { padding: 22px; }
+}
+
+/* Empty states */
+.empty-state { color: var(--text-tertiary); font-size: 13px; text-align: center; padding: 20px 8px; }
+
+/* Movimento reduzido */
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
