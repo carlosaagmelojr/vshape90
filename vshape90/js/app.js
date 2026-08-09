@@ -1732,6 +1732,17 @@ const App = {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('service-worker.js').catch(err => console.warn('SW falhou:', err));
+
+        // Sem isso, um Service Worker novo pode instalar em segundo plano e o
+        // app continuar mostrando a versão antiga em memória até o usuário
+        // fechar e reabrir manualmente (ou pior, nunca perceber). Ao detectar
+        // que um SW novo assumiu o controle, recarrega a página automaticamente.
+        let refreshed = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (refreshed) return;
+          refreshed = true;
+          window.location.reload();
+        });
       });
     }
   }
