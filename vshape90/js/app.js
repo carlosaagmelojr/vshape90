@@ -125,7 +125,15 @@ const App = {
     const plan = Workouts.planForDay(dayKey);
     const el = document.getElementById('today-workout-content');
     if (!plan || !plan.exercises.length) {
-      el.innerHTML = `<p class="muted">Hoje é dia de recuperação ativa. Sem musculação programada.</p>`;
+      el.innerHTML = `
+        <p class="muted">Hoje é dia de recuperação ativa. Sem musculação programada — mas se quiser treinar, dá pra escolher grupos musculares ou usar a ficha de outro dia.</p>
+        <button class="btn-secondary" id="btn-goto-rest-options" style="margin-top:10px">Ver opções de treino</button>
+      `;
+      document.getElementById('btn-goto-rest-options').addEventListener('click', () => {
+        this.goTo('treino');
+        this.selectedDayTab = dayKey;
+        this.renderTreino();
+      });
       return;
     }
     el.innerHTML = `
@@ -273,7 +281,18 @@ const App = {
     const content = document.getElementById('treino-content');
 
     if (!plan.exercises.length) {
-      content.innerHTML = `<div class="panel"><p class="muted">Dia de recuperação ativa: caminhada leve, mobilidade e alongamento. Sem musculação pesada.</p></div>`;
+      content.innerHTML = `
+        <div class="panel">
+          <h3>Dia de recuperação ativa</h3>
+          <p class="muted">Caminhada leve, mobilidade e alongamento. Sem musculação pesada programada — mas se quiser treinar mesmo assim, escolha uma opção abaixo.</p>
+          <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px">
+            <button class="btn-secondary" id="btn-rest-muscle-groups">Escolher grupos musculares</button>
+            <button class="btn-secondary" id="btn-rest-use-ficha">Usar a ficha de outro dia</button>
+          </div>
+        </div>
+      `;
+      document.getElementById('btn-rest-muscle-groups').addEventListener('click', () => this.showMuscleGroupPicker());
+      document.getElementById('btn-rest-use-ficha').addEventListener('click', () => this.showFichaPicker());
       return;
     }
 
@@ -284,6 +303,7 @@ const App = {
         <button class="btn-primary" id="btn-start-day">Iniciar treino do dia</button>
       </div>
       ${plan.exercises.map((ex, idx) => this.exerciseCardHTML(ex, dayKey, idx)).join('')}
+      <button class="btn-ghost" id="btn-add-exercise" style="margin-bottom:12px">+ Adicionar exercício</button>
       <div class="panel">
         <h3>${routine.label}</h3>
         <p class="muted">${routine.minutes}</p>
@@ -293,6 +313,7 @@ const App = {
       </div>
     `;
 
+    document.getElementById('btn-add-exercise').addEventListener('click', () => this.showAddExercisePicker(dayKey));
     document.getElementById('btn-start-day').addEventListener('click', () => this.openWorkoutMode(dayKey, 0));
     plan.exercises.forEach((ex, idx) => {
       const btn = content.querySelector(`[data-record="${ex.id}"]`);
@@ -300,11 +321,260 @@ const App = {
       const histBtn = content.querySelector(`[data-hist="${ex.id}"]`);
       if (histBtn) histBtn.addEventListener('click', () => this.showHistory(ex.id));
     });
+    content.querySelectorAll('[data-swap]').forEach(btn => {
+      btn.addEventListener('click', () => this.showSwapPicker(dayKey, Number(btn.dataset.swap)));
+    });
+    content.querySelectorAll('[data-remove]').forEach(btn => {
+      btn.addEventListener('click', () => this.removeExercise(dayKey, Number(btn.dataset.remove)));
+    });
+  },
+
+  removeExercise(dayKey, idx) {
+    const plan = Workouts.planForDay(dayKey);
+    const ex = plan.exercises[idx];
+    if (!confirm(`Remover "${ex.name}" do treino de hoje? O histórico de cargas já registrado é mantido.`)) return;
+    const data = Storage.load();
+    data.plan[dayKey].exercises.splice(idx, 1);
+    Storage.save();
+    this.toast('Exercício removido.');
+    this.renderTreino();
+  },
+
+  /* Adicionar exercício ao dia: escolhe grupo muscular, exercício (do
+     catálogo ou personalizado) e configura séries/reps/descanso. */
+  showAddExercisePicker(dayKey) {
+    const wrap = document.createElement('div');
+    wrap.className = 'workout-mode';
+    const groupEntries = Object.entries(ExerciseCatalog.GROUP_LABELS);
+    wrap.innerHTML = `
+      <button class="icon-btn wm-close" id="add-ex-close">✕</button>
+      <div class="wm-inner" style="text-align:left; max-width:420px">
+        <h3 style="margin-bottom:2px; font-size:18px">Adicionar exercício</h3>
+        <p class="muted" style="margin-bottom:14px">Escolha o grupo muscular</p>
+        <div class="swap-list" id="add-ex-groups">
+          ${groupEntries.map(([key, label]) => `<button class="swap-option swap-option-text" data-group="${key}"><span>${label}</span></button>`).join('')}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(wrap);
+    document.getElementById('add-ex-close').addEventListener('click', () => wrap.remove());
+    wrap.querySelectorAll('[data-group]').forEach(btn => {
+      btn.addEventListener('click', () => this.showAddExerciseStep2(wrap, dayKey, btn.dataset.group));
+    });
+  },
+
+  showAddExerciseStep2(wrap, dayKey, muscleGroup) {
+    const alternatives = ExerciseCatalog.alternativesFor(muscleGroup);
+    const groupLabel = ExerciseCatalog.GROUP_LABELS[muscleGroup];
+    wrap.querySelector('.wm-inner').innerHTML = `
+      <div class="wm-eyebrow">${groupLabel}</div>
+      <h3 style="margin-bottom:2px; font-size:18px">Escolha o exercício</h3>
+      <p class="muted" style="margin-bottom:14px">Ou digite um exercício personalizado</p>
+      <div class="swap-list" style="margin-bottom:14px">
+        ${alternatives.map(alt => `
+          <button class="swap-option" data-name="${alt.name}" data-pattern="${alt.pattern}">
+            ${ExerciseDemos.thumb(alt.pattern)}
+            <span>${alt.name}</span>
+          </button>
+        `).join('')}
+        <button class="swap-option swap-option-text" data-custom="1"><span>+ Exercício personalizado</span></button>
+      </div>
+      <div id="add-ex-custom-name" style="display:none; margin-bottom:14px">
+        <label style="display:block; font-size:11px; color:var(--text-tertiary); font-weight:700; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px">Nome do exercício</label>
+        <input type="text" id="add-ex-custom-input" placeholder="Ex: Remada cavalinho">
+      </div>
+      <div id="add-ex-config" style="display:none">
+        <div class="form-grid" style="margin-bottom:14px">
+          <label>Séries<input type="number" id="add-ex-sets" value="3" min="1" max="8"></label>
+          <label>Descanso (s)<input type="number" id="add-ex-rest" value="90" min="0" step="15"></label>
+          <label>Reps mín.<input type="number" id="add-ex-repslow" value="8" min="1"></label>
+          <label>Reps máx.<input type="number" id="add-ex-repshigh" value="12" min="1"></label>
+        </div>
+        <button class="btn-primary" id="add-ex-confirm">Adicionar ao treino</button>
+      </div>
+    `;
+    let chosen = null;
+    const showConfig = () => { wrap.querySelector('#add-ex-config').style.display = ''; };
+    wrap.querySelectorAll('[data-name]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        chosen = { name: btn.dataset.name, pattern: btn.dataset.pattern };
+        wrap.querySelector('#add-ex-custom-name').style.display = 'none';
+        wrap.querySelectorAll('.swap-option').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        showConfig();
+      });
+    });
+    wrap.querySelector('[data-custom]').addEventListener('click', (e) => {
+      chosen = { name: '', pattern: 'core' };
+      wrap.querySelector('#add-ex-custom-name').style.display = '';
+      wrap.querySelectorAll('.swap-option').forEach(b => b.classList.remove('active'));
+      e.currentTarget.classList.add('active');
+      showConfig();
+    });
+    wrap.querySelector('#add-ex-confirm').addEventListener('click', () => {
+      const customInput = wrap.querySelector('#add-ex-custom-input');
+      const finalName = customInput && customInput.value.trim() ? customInput.value.trim() : chosen.name;
+      if (!finalName) { this.toast('Digite um nome para o exercício.'); return; }
+      const data = Storage.load();
+      data.plan[dayKey].exercises.push({
+        id: uid('ex'),
+        name: finalName,
+        sets: Number(wrap.querySelector('#add-ex-sets').value) || 3,
+        repsLow: Number(wrap.querySelector('#add-ex-repslow').value) || 8,
+        repsHigh: Number(wrap.querySelector('#add-ex-repshigh').value) || 12,
+        restSec: Number(wrap.querySelector('#add-ex-rest').value) || 90,
+        pattern: chosen.pattern,
+        muscleGroup
+      });
+      Storage.save();
+      this.toast(`"${finalName}" adicionado ao treino.`);
+      wrap.remove();
+      this.renderTreino();
+    });
+  },
+
+  /* Dia de descanso — opção 1: montar treino avulso escolhendo grupos musculares */
+  showMuscleGroupPicker() {
+    const wrap = document.createElement('div');
+    wrap.className = 'workout-mode';
+    const groupEntries = Object.entries(ExerciseCatalog.GROUP_LABELS);
+    wrap.innerHTML = `
+      <button class="icon-btn wm-close" id="mg-close">✕</button>
+      <div class="wm-inner" style="text-align:left; max-width:420px">
+        <h3 style="margin-bottom:2px; font-size:18px">Escolher grupos musculares</h3>
+        <p class="muted" style="margin-bottom:14px">Selecione um ou mais grupos. Monto 2 exercícios de cada.</p>
+        <div class="swap-list" id="mg-list" style="margin-bottom:16px">
+          ${groupEntries.map(([key, label]) => `<button class="swap-option swap-option-text" data-group="${key}"><span>${label}</span></button>`).join('')}
+        </div>
+        <button class="btn-primary" id="mg-confirm">Montar treino</button>
+      </div>
+    `;
+    document.body.appendChild(wrap);
+    const selected = new Set();
+    document.getElementById('mg-close').addEventListener('click', () => wrap.remove());
+    wrap.querySelectorAll('[data-group]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const g = btn.dataset.group;
+        if (selected.has(g)) { selected.delete(g); btn.classList.remove('active'); }
+        else { selected.add(g); btn.classList.add('active'); }
+      });
+    });
+    document.getElementById('mg-confirm').addEventListener('click', () => {
+      if (!selected.size) { this.toast('Escolha ao menos um grupo muscular.'); return; }
+      const exercises = [];
+      selected.forEach(group => {
+        const alts = ExerciseCatalog.alternativesFor(group).slice(0, 2);
+        alts.forEach(alt => exercises.push({
+          id: uid('ex'), name: alt.name, sets: 3, repsLow: 8, repsHigh: 12, restSec: 90,
+          pattern: alt.pattern, muscleGroup: group
+        }));
+      });
+      const label = Array.from(selected).map(g => ExerciseCatalog.GROUP_LABELS[g]).join(' + ');
+      wrap.remove();
+      this.openWorkoutModeCustom(label, exercises);
+    });
+  },
+
+  /* Dia de descanso — opção 2: usar a ficha (plano) de outro dia da semana */
+  showFichaPicker() {
+    const data = Storage.load();
+    const labels = { domingo: 'Domingo', segunda: 'Segunda', terca: 'Terça', quarta: 'Quarta', quinta: 'Quinta', sexta: 'Sexta', sabado: 'Sábado' };
+    const options = DAY_KEYS.filter(k => data.plan[k].exercises.length > 0);
+    const wrap = document.createElement('div');
+    wrap.className = 'workout-mode';
+    wrap.innerHTML = `
+      <button class="icon-btn wm-close" id="ficha-close">✕</button>
+      <div class="wm-inner" style="text-align:left; max-width:420px">
+        <h3 style="margin-bottom:2px; font-size:18px">Usar ficha de outro dia</h3>
+        <p class="muted" style="margin-bottom:14px">O treino de hoje será registrado normalmente, contando pra sua sequência.</p>
+        <div class="swap-list">
+          ${options.map(k => `
+            <button class="swap-option swap-option-text" data-day="${k}">
+              <span>${labels[k]} — ${data.plan[k].name} <span class="muted" style="font-weight:400">(${data.plan[k].exercises.length} exercícios)</span></span>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(wrap);
+    document.getElementById('ficha-close').addEventListener('click', () => wrap.remove());
+    wrap.querySelectorAll('[data-day]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        wrap.remove();
+        this.openWorkoutMode(btn.dataset.day, 0);
+      });
+    });
+  },
+
+  /* Substituição de exercício: mostra alternativas do mesmo grupo
+     muscular. Trocar cria um novo id de exercício (o histórico do
+     exercício antigo fica preservado, só não aparece mais no plano). */
+  showSwapPicker(dayKey, idx) {
+    const plan = Workouts.planForDay(dayKey);
+    const current = plan.exercises[idx];
+    const alternatives = ExerciseCatalog.alternativesFor(current.muscleGroup);
+    const groupLabel = ExerciseCatalog.GROUP_LABELS[current.muscleGroup] || 'Exercício';
+    const defaultPlan = window.buildDefaultPlan();
+    const defaultEx = defaultPlan[dayKey] && defaultPlan[dayKey].exercises[idx];
+    const isCustomized = defaultEx && defaultEx.id !== current.id;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'workout-mode';
+    wrap.innerHTML = `
+      <button class="icon-btn wm-close" id="swap-close">✕</button>
+      <div class="wm-inner" style="text-align:left; max-width:420px">
+        <div class="wm-eyebrow">${groupLabel}</div>
+        <h3 style="margin-bottom:2px; font-size:18px">Trocar exercício</h3>
+        <p class="muted" style="margin-bottom:14px">Exercício atual: ${current.name}</p>
+        <div class="swap-list">
+          ${alternatives.map(alt => `
+            <button class="swap-option ${alt.name === current.name ? 'active' : ''}" data-alt-id="${alt.id}" data-alt-name="${alt.name}" data-alt-pattern="${alt.pattern}">
+              ${ExerciseDemos.thumb(alt.pattern)}
+              <span>${alt.name}</span>
+            </button>
+          `).join('')}
+        </div>
+        ${isCustomized ? `<button class="btn-ghost" id="swap-restore" style="margin-top:14px">Restaurar exercício padrão do dia</button>` : ''}
+      </div>
+    `;
+    document.body.appendChild(wrap);
+    document.getElementById('swap-close').addEventListener('click', () => wrap.remove());
+    wrap.querySelectorAll('.swap-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        this.applyExerciseSwap(dayKey, idx, {
+          id: opt.dataset.altId,
+          name: opt.dataset.altName,
+          pattern: opt.dataset.altPattern,
+          sets: current.sets,
+          repsLow: current.repsLow,
+          repsHigh: current.repsHigh,
+          restSec: current.restSec,
+          muscleGroup: current.muscleGroup
+        });
+        wrap.remove();
+      });
+    });
+    const restoreBtn = document.getElementById('swap-restore');
+    if (restoreBtn) {
+      restoreBtn.addEventListener('click', () => {
+        this.applyExerciseSwap(dayKey, idx, defaultEx);
+        wrap.remove();
+      });
+    }
+  },
+
+  applyExerciseSwap(dayKey, idx, newExercise) {
+    const data = Storage.load();
+    data.plan[dayKey].exercises[idx] = { ...newExercise };
+    Storage.save();
+    this.toast(`Exercício trocado para ${newExercise.name}.`);
+    this.renderTreino();
   },
 
   exerciseCardHTML(ex, dayKey, idx) {
     const last = Workouts.lastLog(ex.id);
     const suggestion = Workouts.progressionSuggestion(ex.id);
+    const plateau = Workouts.plateauCheck(ex.id);
     const lastText = last
       ? last.sets.map(s => `${s.weight}kg×${s.reps}`).join(' · ')
       : 'sem registros ainda';
@@ -315,12 +585,21 @@ const App = {
           <div style="flex:1; min-width:0">
             <div class="ex-head">
               <div class="ex-name">${ex.name}</div>
-              <div class="rest-chip">${ex.restSec}s</div>
+              <div style="display:flex; align-items:center; gap:6px; flex:none">
+                <div class="rest-chip">${ex.restSec}s</div>
+                <button class="icon-btn ex-swap-btn" data-swap="${idx}" title="Trocar exercício">
+                  <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h11M13 4.5 16 8l-3 3.5"/><path d="M17 14H6M9 10.5 6 14l3 3.5"/></svg>
+                </button>
+                <button class="icon-btn ex-remove-btn" data-remove="${idx}" title="Remover exercício">
+                  <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h12M9 6V4.5h4V6M6.5 6l.7 11a1 1 0 0 0 1 .9h5.6a1 1 0 0 0 1-.9l.7-11"/></svg>
+                </button>
+              </div>
             </div>
             <div class="ex-meta">${ex.sets}× ${ex.repsLow}–${ex.repsHigh} · última: ${lastText}</div>
           </div>
         </div>
         ${suggestion ? `<div class="ex-suggestion ${suggestion.level}">${suggestion.text}</div>` : ''}
+        ${plateau.isPlateau ? `<div class="ex-suggestion plateau">Sem evolução de carga há ${plateau.sessionsConsidered} sessões (~${plateau.daysSpan} dias). Considere uma semana de deload: reduza cerca de 10–20% do peso por 5–7 dias.</div>` : ''}
         <div class="ex-actions">
           <button class="btn-secondary" data-hist="${ex.id}">Histórico</button>
           <button class="btn-primary" data-record="${ex.id}">Registrar</button>
@@ -338,13 +617,16 @@ const App = {
     const hist = Workouts.history(exerciseId);
     const stats = Workouts.stats(exerciseId);
     const rows = hist.slice().reverse().slice(0, 15).map(h => `
-      <div class="ex-history-row">
+      <div class="ex-history-row ex-history-row-editable">
         <span>${h.date}</span>
         <span>${h.maxWeight}kg</span>
         <span>${h.volume}kg vol</span>
+        <button class="icon-btn ex-edit-log-btn" data-log-id="${h.id}" title="Editar registro">
+          <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5 17.5 7.5 8 17H5v-3z"/></svg>
+        </button>
       </div>
     `).join('') || '<p class="empty-state">Sem histórico ainda.</p>';
-    const headerRow = hist.length ? `<div class="ex-history-row"><span>Data</span><span>Carga</span><span>Volume</span></div>` : '';
+    const headerRow = hist.length ? `<div class="ex-history-row ex-history-row-editable"><span>Data</span><span>Carga</span><span>Volume</span><span></span></div>` : '';
 
     const wrap = document.createElement('div');
     wrap.className = 'workout-mode';
@@ -362,7 +644,7 @@ const App = {
           </div>
           <canvas id="hist-chart" class="chart-canvas" style="margin-bottom:14px"></canvas>
         ` : '<p class="empty-state">Sem histórico ainda.</p>'}
-        <div>${headerRow}${rows}</div>
+        <div id="hist-rows-container">${headerRow}${rows}</div>
       </div>
     `;
     document.body.appendChild(wrap);
@@ -371,6 +653,62 @@ const App = {
       const points = hist.map(h => ({ label: h.date.slice(5), value: h.maxWeight }));
       Charts.lineChart(document.getElementById('hist-chart'), points, { color: '#C6FA3E' });
     }
+    wrap.querySelectorAll('.ex-edit-log-btn').forEach(btn => {
+      btn.addEventListener('click', () => this.showEditLogForm(wrap, exerciseId, btn.dataset.logId));
+    });
+  },
+
+  /* Corrige um registro já salvo (erro de digitação de carga/reps) ou apaga
+     o registro inteiro, sem precisar refazer o exercício. */
+  showEditLogForm(historyWrap, exerciseId, logId) {
+    const data = Storage.load();
+    const entry = (data.exerciseLogs[exerciseId] || []).find(l => l.id === logId);
+    if (!entry) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'workout-mode';
+    wrap.innerHTML = `
+      <button class="icon-btn wm-close" id="edit-log-close">✕</button>
+      <div class="wm-inner" style="text-align:left; max-width:380px">
+        <h3 style="margin-bottom:2px; font-size:18px">Editar registro</h3>
+        <p class="muted" style="margin-bottom:14px">${entry.date}</p>
+        <div id="edit-log-sets" style="display:flex; flex-direction:column; gap:10px; margin-bottom:14px">
+          ${entry.sets.map((s, i) => `
+            <div class="form-grid">
+              <label>Série ${i + 1} — Carga (kg)<input type="number" step="0.5" class="edit-set-weight" data-idx="${i}" value="${s.weight}"></label>
+              <label>Repetições<input type="number" class="edit-set-reps" data-idx="${i}" value="${s.reps}"></label>
+            </div>
+          `).join('')}
+        </div>
+        <label class="wm-pain-check" style="justify-content:flex-start">
+          <input type="checkbox" id="edit-log-pain" ${entry.painFlag ? 'checked' : ''}> Houve dor nesta sessão
+        </label>
+        <button class="btn-primary" id="edit-log-save" style="margin-top:16px">Salvar correção</button>
+        <button class="btn-danger" id="edit-log-delete" style="margin-top:10px">Apagar este registro</button>
+      </div>
+    `;
+    document.body.appendChild(wrap);
+    document.getElementById('edit-log-close').addEventListener('click', () => wrap.remove());
+    document.getElementById('edit-log-save').addEventListener('click', () => {
+      const weights = wrap.querySelectorAll('.edit-set-weight');
+      const reps = wrap.querySelectorAll('.edit-set-reps');
+      const sets = Array.from(weights).map((w, i) => ({ weight: w.value, reps: reps[i].value }));
+      Workouts.updateExerciseLog(exerciseId, logId, { sets, painFlag: document.getElementById('edit-log-pain').checked });
+      this.toast('Registro corrigido.');
+      wrap.remove();
+      historyWrap.remove();
+      this.showHistory(exerciseId);
+      this.renderTreino();
+    });
+    document.getElementById('edit-log-delete').addEventListener('click', () => {
+      if (!confirm('Apagar este registro do histórico? Essa ação não pode ser desfeita.')) return;
+      Workouts.deleteExerciseLog(exerciseId, logId);
+      this.toast('Registro apagado.');
+      wrap.remove();
+      historyWrap.remove();
+      this.showHistory(exerciseId);
+      this.renderTreino();
+    });
   },
 
   /* ============================================================
@@ -392,11 +730,31 @@ const App = {
     const session = Workouts.startSession(dayKey);
     this.wm = {
       dayKey,
+      dayLabel: plan.name,
       session,
       exercises: plan.exercises,
       exIndex: startIndex,
       setIndex: 0,
       buffer: [], // sets concluídos do exercício atual
+      restTimer: null
+    };
+    document.getElementById('workout-mode').classList.remove('hidden');
+    this.wmRenderStep();
+  },
+
+  /* Treino avulso (fora da grade semanal) — usado no dia de descanso
+     quando o usuário escolhe grupos musculares em vez de uma ficha fixa. */
+  openWorkoutModeCustom(dayLabel, exercises) {
+    if (!exercises.length) return;
+    const session = Workouts.startSession('avulso');
+    this.wm = {
+      dayKey: 'avulso',
+      dayLabel,
+      session,
+      exercises,
+      exIndex: 0,
+      setIndex: 0,
+      buffer: [],
       restTimer: null
     };
     document.getElementById('workout-mode').classList.remove('hidden');
@@ -419,17 +777,23 @@ const App = {
     const ex = this.wmCurrentExercise();
     const last = Workouts.lastLog(ex.id);
     const lastSet = last ? last.sets[this.wm.setIndex] : null;
+    const prevInSession = this.wm.buffer.length ? this.wm.buffer[this.wm.buffer.length - 1] : null;
 
-    document.getElementById('wm-eyebrow').textContent = (Workouts.planForDay(this.wm.dayKey).name || '').toUpperCase();
+    document.getElementById('wm-eyebrow').textContent = (this.wm.dayLabel || '').toUpperCase();
     document.getElementById('wm-demo').innerHTML = ExerciseDemos.large(ex.pattern);
     document.getElementById('wm-exname').textContent = ex.name.toUpperCase();
     document.getElementById('wm-external-link').firstChild.textContent = `Ver "${ex.name}" no Gif do Treino `;
     document.getElementById('wm-series').textContent = `Série ${this.wm.setIndex + 1}/${ex.sets}`;
-    document.getElementById('wm-prev').textContent = lastSet
-      ? `Anterior: ${lastSet.weight}kg × ${lastSet.reps}`
-      : 'Anterior: sem registro';
+    document.getElementById('wm-prev').textContent = prevInSession
+      ? `Série anterior (hoje): ${prevInSession.weight}kg × ${prevInSession.reps}`
+      : lastSet
+        ? `Última vez: ${lastSet.weight}kg × ${lastSet.reps}`
+        : 'Sem registro anterior';
 
-    const suggestedWeight = lastSet ? lastSet.weight : 0;
+    // A carga já vem preenchida com o peso usado na série anterior desta
+    // mesma sessão (o mais comum é manter o mesmo peso entre séries).
+    // Só cai para o histórico de sessões passadas na primeira série.
+    const suggestedWeight = prevInSession ? prevInSession.weight : (lastSet ? lastSet.weight : 0);
     const suggestedReps = lastSet ? lastSet.reps : ex.repsLow;
     document.getElementById('wm-weight').value = suggestedWeight;
     document.getElementById('wm-reps').value = suggestedReps;
@@ -928,6 +1292,7 @@ const App = {
   renderMais() {
     this.renderWater();
     this.renderNutrition();
+    this.renderWeeklyGrid();
     const data = Storage.load();
     document.getElementById('set-water').value = data.settings.waterGoalMl;
     document.getElementById('set-cal').value = data.settings.calorieGoal;
@@ -935,6 +1300,67 @@ const App = {
     document.getElementById('set-carb').value = data.settings.carbGoal;
     document.getElementById('set-fat').value = data.settings.fatGoal;
     document.getElementById('set-rest').value = data.settings.restTimerDefault;
+  },
+
+  renderWeeklyGrid() {
+    const data = Storage.load();
+    const labels = { domingo: 'Domingo', segunda: 'Segunda', terca: 'Terça', quarta: 'Quarta', quinta: 'Quinta', sexta: 'Sexta', sabado: 'Sábado' };
+    const el = document.getElementById('weekly-grid-content');
+    el.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:8px">
+        ${DAY_KEYS.map(k => {
+          const plan = data.plan[k];
+          const summary = plan.exercises.length ? `${plan.name} · ${plan.exercises.length} exercícios` : 'Recuperação ativa';
+          return `
+            <button class="day-row" data-swap-day="${k}" style="cursor:pointer; border:1px solid var(--border); background:var(--surface)">
+              <div>
+                <div class="day-name">${labels[k]}</div>
+                <div class="day-summary">${summary}</div>
+              </div>
+              <svg class="chevron" viewBox="0 0 22 22" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h11M13 4.5 16 8l-3 3.5"/><path d="M17 14H6M9 10.5 6 14l3 3.5"/></svg>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    `;
+    el.querySelectorAll('[data-swap-day]').forEach(btn => {
+      btn.addEventListener('click', () => this.showDaySwapPicker(btn.dataset.swapDay));
+    });
+  },
+
+  showDaySwapPicker(dayA) {
+    const data = Storage.load();
+    const labels = { domingo: 'Domingo', segunda: 'Segunda', terca: 'Terça', quarta: 'Quarta', quinta: 'Quinta', sexta: 'Sexta', sabado: 'Sábado' };
+    const others = DAY_KEYS.filter(k => k !== dayA);
+    const wrap = document.createElement('div');
+    wrap.className = 'workout-mode';
+    wrap.innerHTML = `
+      <button class="icon-btn wm-close" id="dayswap-close">✕</button>
+      <div class="wm-inner" style="text-align:left; max-width:420px">
+        <div class="wm-eyebrow">${labels[dayA]} — ${data.plan[dayA].name}</div>
+        <h3 style="margin-bottom:2px; font-size:18px">Trocar com qual dia?</h3>
+        <p class="muted" style="margin-bottom:14px">O conteúdo (exercícios e CORE) dos dois dias será trocado entre si.</p>
+        <div class="swap-list">
+          ${others.map(k => `
+            <button class="swap-option swap-option-text" data-target="${k}">
+              <span>${labels[k]} — ${data.plan[k].exercises.length ? data.plan[k].name : 'Recuperação ativa'}</span>
+            </button>
+          `).join('')}
+        </div>
+      </div>
+    `;
+    document.body.appendChild(wrap);
+    document.getElementById('dayswap-close').addEventListener('click', () => wrap.remove());
+    wrap.querySelectorAll('[data-target]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const dayB = btn.dataset.target;
+        Workouts.swapDays(dayA, dayB);
+        this.toast(`${labels[dayA]} e ${labels[dayB]} trocados.`);
+        wrap.remove();
+        this.renderWeeklyGrid();
+        this.renderTreino();
+      });
+    });
   },
 
   renderWater() {

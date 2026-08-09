@@ -327,6 +327,7 @@ textarea { resize: vertical; }
 .ex-suggestion.warning { color: var(--danger); background: var(--danger-soft); border-left-color: var(--danger); }
 .ex-suggestion.info { color: var(--warning); background: var(--warning-soft); border-left-color: var(--warning); }
 .ex-suggestion.neutral { color: var(--text-secondary); }
+.ex-suggestion.plateau { color: var(--accent); background: var(--accent-soft); border-left-color: var(--accent); }
 .exercise-card .ex-actions { display: flex; gap: 8px; margin-top: 12px; }
 .exercise-card .ex-actions button { flex: 1; }
 .ex-external-link {
@@ -338,11 +339,32 @@ textarea { resize: vertical; }
 }
 .ex-external-link:active { color: var(--accent); border-color: var(--accent); }
 .ex-external-link svg { width: 13px; height: 13px; flex: none; }
+
+/* Botão de trocar exercício (dentro do card) */
+.ex-swap-btn { width: 30px; height: 30px; border-radius: 8px; }
+.ex-swap-btn svg { width: 15px; height: 15px; }
+
+/* Lista de alternativas no seletor de troca de exercício */
+.swap-list { display: flex; flex-direction: column; gap: 8px; max-height: 60vh; overflow-y: auto; }
+.swap-option {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 8px 12px;
+  color: var(--text); font-size: 14px; font-weight: 600; text-align: left;
+  width: 100%;
+}
+.swap-option .exercise-demo-sm { width: 36px; height: 50px; }
+.swap-option.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.swap-option.swap-option-text { justify-content: center; text-align: center; }
 .ex-history-row {
   display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
   font-size: 12.5px; padding: 8px 0; border-bottom: 1px solid var(--border);
   font-variant-numeric: tabular-nums; color: var(--text-secondary);
+  align-items: center;
 }
+.ex-history-row-editable { grid-template-columns: 1fr 1fr 1fr auto; }
+.ex-history-row .ex-edit-log-btn { width: 26px; height: 26px; }
+.ex-history-row .ex-edit-log-btn svg { width: 13px; height: 13px; }
 .ex-history-row:first-child { color: var(--text-tertiary); font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
 .ex-history-row:last-child { border-bottom: none; }
 .ex-history-row span:nth-child(2) { text-align: center; }
@@ -361,6 +383,7 @@ textarea { resize: vertical; }
   display: flex; align-items: center; justify-content: space-between;
   background: var(--surface); border: 1px solid var(--border);
   border-radius: var(--radius-lg); padding: 16px; margin-bottom: 10px;
+  width: 100%; text-align: left; font-family: inherit; color: var(--text);
 }
 .day-row .day-name { font-weight: 800; font-size: 15px; }
 .day-row .day-summary { color: var(--accent); font-weight: 700; font-size: 13px; margin-top: 3px; }

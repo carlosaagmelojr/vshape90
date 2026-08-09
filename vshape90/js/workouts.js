@@ -10,6 +10,17 @@ const Workouts = {
     return data.plan[dayKey];
   },
 
+  /* Troca o conteúdo (nome, CORE, exercícios) de dois dias da semana entre
+     si — ex.: mover "Pernas" de quarta pra quinta troca o conteúdo dos dois. */
+  swapDays(dayA, dayB) {
+    if (dayA === dayB) return;
+    const data = Storage.load();
+    const temp = data.plan[dayA];
+    data.plan[dayA] = data.plan[dayB];
+    data.plan[dayB] = temp;
+    Storage.save();
+  },
+
   allExercises() {
     const data = Storage.load();
     const list = [];
@@ -53,6 +64,30 @@ const Workouts = {
     return entry;
   },
 
+  /* Corrige um registro já salvo (ex.: erro de digitação na carga/reps).
+     updates pode conter sets, note, rir, painFlag — só o que for passado é alterado. */
+  updateExerciseLog(exerciseId, logId, updates) {
+    const data = Storage.load();
+    const logs = data.exerciseLogs[exerciseId];
+    if (!logs) return null;
+    const entry = logs.find(l => l.id === logId);
+    if (!entry) return null;
+    if (updates.sets) entry.sets = updates.sets.map(s => ({ weight: Number(s.weight) || 0, reps: Number(s.reps) || 0 }));
+    if ('note' in updates) entry.note = updates.note;
+    if ('rir' in updates) entry.rir = updates.rir;
+    if ('painFlag' in updates) entry.painFlag = !!updates.painFlag;
+    Storage.save();
+    return entry;
+  },
+
+  deleteExerciseLog(exerciseId, logId) {
+    const data = Storage.load();
+    const logs = data.exerciseLogs[exerciseId];
+    if (!logs) return;
+    data.exerciseLogs[exerciseId] = logs.filter(l => l.id !== logId);
+    Storage.save();
+  },
+
   volumeOf(entry) {
     return entry.sets.reduce((sum, s) => sum + (s.weight * s.reps), 0);
   },
@@ -64,6 +99,7 @@ const Workouts = {
   history(exerciseId) {
     const logs = this.logsFor(exerciseId);
     return logs.map(e => ({
+      id: e.id,
       date: e.date,
       maxWeight: this.maxWeightOf(e),
       volume: this.volumeOf(e),
@@ -132,6 +168,23 @@ const Workouts = {
       null: { label: 'Sem CORE hoje', minutes: '', items: [] }
     };
     return routines[coreType] || routines.null;
+  },
+
+  /* Detecta possível platô: várias sessões seguidas sem aumento de carga
+     máxima, cobrindo um período de tempo relevante (evita alarme falso
+     nas primeiras semanas). Sugere considerar uma semana de deload. */
+  plateauCheck(exerciseId, minSessions = 4, minDaysSpan = 10) {
+    const hist = this.history(exerciseId);
+    if (hist.length < minSessions) return { isPlateau: false };
+    const recent = hist.slice(-minSessions);
+    const first = recent[0].maxWeight;
+    const noProgress = recent.every(h => h.maxWeight <= first);
+    const daysSpan = (new Date(recent[recent.length - 1].date) - new Date(recent[0].date)) / 86400000;
+    return {
+      isPlateau: noProgress && daysSpan >= minDaysSpan && first > 0,
+      sessionsConsidered: recent.length,
+      daysSpan: Math.round(daysSpan)
+    };
   },
 
   /* Sessões de treino (para dashboard / streak / consistência) */

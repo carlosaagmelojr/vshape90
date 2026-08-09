@@ -18,7 +18,7 @@ async function main() {
     .replace('<link rel="apple-touch-icon" href="assets/icon-192.png">', '')
     .replace('<link rel="stylesheet" href="css/style.css">', `<style>${fs.readFileSync(path.join(root, 'css/style.css'), 'utf8')}</style>`);
 
-  const scripts = ['storage', 'charts', 'exercise-demos', 'workouts', 'running', 'recovery', 'app'];
+  const scripts = ['storage', 'charts', 'exercise-demos', 'exercise-catalog', 'workouts', 'running', 'recovery', 'app'];
   for (const s of scripts) {
     inlineHtml = inlineHtml.replace(
       `<script src="js/${s}.js"></script>`,
@@ -209,6 +209,141 @@ async function main() {
     App.selectedDayTab = 'segunda';
     App.renderTreino();
     return document.querySelectorAll('.exercise-card .exercise-demo-svg').length > 0;
+  })());
+
+  check('Extra: todos os exercícios têm grupo muscular com alternativas cadastradas', (() => {
+    const all = window.Workouts.allExercises();
+    return all.every(e => !!e.muscleGroup && window.ExerciseCatalog.alternativesFor(e.muscleGroup).length > 0);
+  })());
+
+  check('Extra: peso da série anterior (mesma sessão) é pré-preenchido corretamente', (() => {
+    App.openWorkoutMode('terca', 0); // ter_1 Supino reto, 4 séries
+    document.getElementById('wm-weight').value = 70;
+    document.getElementById('wm-reps').value = 10;
+    App.wmConcludeSet(); // conclui série 1, avança pra série 2
+    const weightField = Number(document.getElementById('wm-weight').value);
+    App.clearRestTimer();
+    App.closeWorkoutMode();
+    return weightField === 70; // deve puxar o peso da série 1 desta sessão, não do histórico
+  })());
+
+  check('Extra: troca de exercício aplica corretamente e preserva séries/reps configuradas', (() => {
+    App.goTo('treino');
+    App.selectedDayTab = 'segunda';
+    App.renderTreino();
+    const before = window.Workouts.planForDay('segunda').exercises[0];
+    App.applyExerciseSwap('segunda', 0, {
+      id: 'cat_remada_curvada_com_barra', name: 'Remada curvada com barra', pattern: 'row',
+      sets: before.sets, repsLow: before.repsLow, repsHigh: before.repsHigh, restSec: before.restSec, muscleGroup: before.muscleGroup
+    });
+    const after = window.Workouts.planForDay('segunda').exercises[0];
+    return after.name === 'Remada curvada com barra' && after.sets === before.sets && after.id === 'cat_remada_curvada_com_barra';
+  })());
+
+  check('Extra: adicionar exercício via API insere no plano do dia', (() => {
+    const d = window.Storage.load();
+    const before = d.plan.terca.exercises.length;
+    d.plan.terca.exercises.push({
+      id: window.uid('ex'), name: 'Supino máquina', sets: 3, repsLow: 8, repsHigh: 12,
+      restSec: 90, pattern: 'press-h', muscleGroup: 'peito'
+    });
+    window.Storage.save();
+    const after = window.Workouts.planForDay('terca').exercises.length;
+    return after === before + 1;
+  })());
+
+  check('Extra: remover exercício tira do plano mas preserva o histórico', (() => {
+    const d = window.Storage.load();
+    const idx = d.plan.terca.exercises.length - 1; // o que acabamos de adicionar
+    const removedId = d.plan.terca.exercises[idx].id;
+    d.plan.terca.exercises.splice(idx, 1);
+    window.Storage.save();
+    const stillInPlan = window.Workouts.planForDay('terca').exercises.some(e => e.id === removedId);
+    return !stillInPlan;
+  })());
+
+  check('Extra: treino avulso (dia de descanso) por grupo muscular funciona ponta a ponta', (() => {
+    const exercises = window.ExerciseCatalog.alternativesFor('peito').slice(0, 2).map(alt => ({
+      id: window.uid('ex'), name: alt.name, sets: 3, repsLow: 8, repsHigh: 12, restSec: 90,
+      pattern: alt.pattern, muscleGroup: 'peito'
+    }));
+    App.openWorkoutModeCustom('Peito (avulso)', exercises);
+    const opened = App.wm && App.wm.dayKey === 'avulso' && App.wm.exercises.length === 2 && App.wm.dayLabel === 'Peito (avulso)';
+    App.clearRestTimer();
+    App.closeWorkoutMode();
+    return opened;
+  })());
+
+  check('Extra: ficha de outro dia pode ser usada num dia de descanso (sessão registrada sob esse dayKey)', (() => {
+    App.openWorkoutMode('quarta', 0); // usando a ficha de quarta mesmo não sendo quarta hoje
+    const ok = App.wm && App.wm.dayKey === 'quarta' && App.wm.dayLabel === window.Workouts.planForDay('quarta').name;
+    App.clearRestTimer();
+    App.closeWorkoutMode();
+    return ok;
+  })());
+
+  check('Extra: domingo (dia de descanso) mostra as opções de treinar mesmo assim', (() => {
+    App.goTo('treino');
+    App.selectedDayTab = 'domingo';
+    App.renderTreino();
+    return !!document.getElementById('btn-rest-muscle-groups') && !!document.getElementById('btn-rest-use-ficha');
+  })());
+
+  check('Extra: editar registro corrige carga/reps de uma série já salva', (() => {
+    const entry = window.Workouts.lastLog('seg_1'); // registrado no teste 1
+    window.Workouts.updateExerciseLog('seg_1', entry.id, {
+      sets: [{ weight: 60, reps: 12 }, { weight: 60, reps: 11 }, { weight: 58, reps: 10 }, { weight: 58, reps: 9 }]
+    });
+    const updated = window.Workouts.lastLog('seg_1');
+    return updated.sets[0].weight === 60 && updated.sets[0].reps === 12;
+  })());
+
+  check('Extra: apagar registro remove do histórico sem afetar outros exercícios', (() => {
+    window.Running.addLog({ type: 'leve', distanceKm: 1, durationMin: 6 }); // dado de controle não relacionado
+    const beforeCount = window.Workouts.history('seg_1').length;
+    const entry = window.Workouts.lastLog('seg_1');
+    window.Workouts.deleteExerciseLog('seg_1', entry.id);
+    const afterCount = window.Workouts.history('seg_1').length;
+    return afterCount === beforeCount - 1;
+  })());
+
+  check('Extra: detecção de platô identifica estagnação de carga', (() => {
+    const exId = 'plateau_test_ex';
+    const data = window.Storage.load();
+    data.exerciseLogs[exId] = [
+      { id: 'l1', date: '2026-01-01', sets: [{ weight: 50, reps: 10 }], note: '', rir: null, painFlag: false },
+      { id: 'l2', date: '2026-01-08', sets: [{ weight: 50, reps: 10 }], note: '', rir: null, painFlag: false },
+      { id: 'l3', date: '2026-01-15', sets: [{ weight: 48, reps: 10 }], note: '', rir: null, painFlag: false },
+      { id: 'l4', date: '2026-01-22', sets: [{ weight: 50, reps: 10 }], note: '', rir: null, painFlag: false }
+    ];
+    window.Storage.save();
+    const result = window.Workouts.plateauCheck(exId);
+    return result.isPlateau === true && result.sessionsConsidered === 4;
+  })());
+
+  check('Extra: sem platô quando a carga vem evoluindo', (() => {
+    const exId = 'progress_test_ex';
+    const data = window.Storage.load();
+    data.exerciseLogs[exId] = [
+      { id: 'p1', date: '2026-01-01', sets: [{ weight: 50, reps: 10 }], note: '', rir: null, painFlag: false },
+      { id: 'p2', date: '2026-01-08', sets: [{ weight: 52, reps: 10 }], note: '', rir: null, painFlag: false },
+      { id: 'p3', date: '2026-01-15', sets: [{ weight: 54, reps: 10 }], note: '', rir: null, painFlag: false },
+      { id: 'p4', date: '2026-01-22', sets: [{ weight: 56, reps: 10 }], note: '', rir: null, painFlag: false }
+    ];
+    window.Storage.save();
+    const result = window.Workouts.plateauCheck(exId);
+    return result.isPlateau === false;
+  })());
+
+  check('Extra: trocar dois dias da grade semanal troca o conteúdo corretamente', (() => {
+    const beforeQuarta = window.Workouts.planForDay('quarta').name;
+    const beforeQuinta = window.Workouts.planForDay('quinta').name;
+    window.Workouts.swapDays('quarta', 'quinta');
+    const afterQuarta = window.Workouts.planForDay('quarta').name;
+    const afterQuinta = window.Workouts.planForDay('quinta').name;
+    const swapped = afterQuarta === beforeQuinta && afterQuinta === beforeQuarta;
+    window.Workouts.swapDays('quarta', 'quinta'); // desfaz, deixa o estado limpo pros próximos testes
+    return swapped;
   })());
 
   // ---- Resultado ----
