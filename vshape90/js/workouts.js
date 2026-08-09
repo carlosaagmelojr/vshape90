@@ -54,7 +54,7 @@ const Workouts = {
     const entry = {
       id: uid('log'),
       date: todayISO(),
-      sets: sets.map(s => ({ weight: Number(s.weight) || 0, reps: Number(s.reps) || 0 })),
+      sets: sets.map(s => ({ weight: Number(s.weight) || 0, reps: Number(s.reps) || 0, rir: (s.rir === '' || s.rir === undefined) ? null : Number(s.rir) })),
       note,
       rir,
       painFlag: !!painFlag
@@ -72,7 +72,7 @@ const Workouts = {
     if (!logs) return null;
     const entry = logs.find(l => l.id === logId);
     if (!entry) return null;
-    if (updates.sets) entry.sets = updates.sets.map(s => ({ weight: Number(s.weight) || 0, reps: Number(s.reps) || 0 }));
+    if (updates.sets) entry.sets = updates.sets.map(s => ({ weight: Number(s.weight) || 0, reps: Number(s.reps) || 0, rir: (s.rir === '' || s.rir === undefined || s.rir === null) ? null : Number(s.rir) }));
     if ('note' in updates) entry.note = updates.note;
     if ('rir' in updates) entry.rir = updates.rir;
     if ('painFlag' in updates) entry.painFlag = !!updates.painFlag;

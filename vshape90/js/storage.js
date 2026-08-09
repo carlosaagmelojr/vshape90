@@ -11,8 +11,8 @@ const IDB_STORE = 'photos';
 function defaultData() {
   const today = todayISO();
   return {
-    meta: { version: 1, createdAt: today, startDate: today },
-    profile: { heightCm: 169, startWeightKg: 76 },
+    meta: { version: 2, createdAt: today, startDate: today, onboardingComplete: false, lastModified: today },
+    profile: { heightCm: 169, startWeightKg: 76, age: null, sex: null, objective: null, daysPerWeek: 6 },
     settings: {
       waterGoalMl: 3000,
       calorieGoal: 2050,
@@ -20,7 +20,10 @@ function defaultData() {
       carbGoal: 220,
       fatGoal: 60,
       restTimerDefault: 90,
-      soundOnTimer: true
+      soundOnTimer: true,
+      reminderEnabled: false,
+      reminderTime: '07:00',
+      lastReminderShownDate: null
     },
     plan: buildDefaultPlan(),
     exerciseLogs: {},      // { exerciseId: [ {date, sets:[{weight,reps}], note, rir, painFlag} ] }
@@ -32,7 +35,11 @@ function defaultData() {
     nutritionLogs: {},     // { 'YYYY-MM-DD': { breakfast:{cal,prot,carb,fat}, lunch:{...}, snack:{...}, dinner:{...}, supper:{...} } }
     waterLogs: {},         // { 'YYYY-MM-DD': ml }
     streak: { count: 0, lastCompletedDate: null },
-    weeklyReports: []      // gerados aos domingos
+    weeklyReports: [],     // gerados aos domingos
+    /* Camada de conta/monetização — ver seção "Conta" em Mais.
+       Sem backend real conectado nesta versão (ver README). "active"
+       só é ligado localmente, nunca por uma cobrança de verdade. */
+    pro: { active: false, activatedAt: null, mode: null } // mode: 'demo' quando ativado localmente para teste
   };
 }
 
@@ -129,6 +136,10 @@ const Storage = {
   save() {
     if (!this._cache) return;
     try {
+      // Carimba quando os dados locais mudaram pela última vez — usado
+      // pelo CloudSync pra decidir local vs. nuvem em caso de conflito
+      // (estratégia last-write-wins, ver js/cloud-sync.js).
+      if (this._cache.meta) this._cache.meta.lastModified = new Date().toISOString();
       localStorage.setItem(DB_KEY, JSON.stringify(this._cache));
       return true;
     } catch (e) {
@@ -140,6 +151,7 @@ const Storage = {
 
   _migrate(data) {
     const def = defaultData();
+    const isPreExisting = !!data.meta && data.meta.onboardingComplete === undefined;
     for (const k of Object.keys(def)) {
       if (!(k in data)) data[k] = def[k];
     }
@@ -147,6 +159,15 @@ const Storage = {
     for (const k of Object.keys(def.settings)) {
       if (!(k in data.settings)) data.settings[k] = def.settings[k];
     }
+    if (!data.profile) data.profile = def.profile;
+    for (const k of Object.keys(def.profile)) {
+      if (!(k in data.profile)) data.profile[k] = def.profile[k];
+    }
+    if (!data.pro) data.pro = def.pro;
+    if (!data.meta.lastModified) data.meta.lastModified = new Date().toISOString();
+    // Quem já usava o app antes do onboarding existir não deve ser
+    // forçado a passar por ele — só pedimos onboarding pra instalação nova.
+    if (isPreExisting) data.meta.onboardingComplete = true;
     // Backfill do campo "pattern" (usado nas animações de execução) em
     // planos salvos antes dessa funcionalidade existir.
     if (data.plan) {
@@ -282,9 +303,22 @@ function uid(prefix = 'id') {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/* Escapa texto vindo do usuário (nomes de exercício personalizados, notas)
+   antes de interpolar em innerHTML — evita que HTML/JS digitado por engano
+   (ou de propósito) quebre a renderização ou execute algo inesperado. */
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /* Exposição explícita para testes automatizados headless (não afeta o navegador) */
 if (typeof window !== 'undefined') {
   window.Storage = Storage; window.Photos = Photos; window.uid = uid;
   window.todayISO = todayISO; window.dayKeyFromDate = dayKeyFromDate; window.DAY_KEYS = DAY_KEYS;
-  window.buildDefaultPlan = buildDefaultPlan;
+  window.buildDefaultPlan = buildDefaultPlan; window.escapeHtml = escapeHtml;
 }

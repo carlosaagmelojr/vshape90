@@ -12,6 +12,95 @@
 </head>
 <body>
 
+<!-- ====================== ONBOARDING ====================== -->
+<div id="onboarding-screen" class="workout-mode hidden" style="z-index:500">
+  <div class="wm-inner" style="text-align:left; max-width:420px">
+    <div class="onboarding-progress">
+      <div class="onboarding-progress-fill" id="ob-progress-fill" style="width:16%"></div>
+    </div>
+
+    <!-- Passo 1: Boas-vindas -->
+    <div class="ob-step" data-step="1">
+      <div class="wm-eyebrow">V-SHAPE 90</div>
+      <h2 style="font-size:24px; margin-bottom:10px">90 dias. Um plano que evolui com você.</h2>
+      <p class="muted mb-6">Sem anúncio, sem depender de internet. Vamos configurar seu plano em menos de 2 minutos.</p>
+      <button class="btn-primary" data-next>Começar</button>
+    </div>
+
+    <!-- Passo 2: Dados físicos -->
+    <div class="ob-step hidden" data-step="2">
+      <h3 style="font-size:18px; margin-bottom:4px; text-transform:none; color:var(--text)">Seus dados</h3>
+      <p class="muted mb-4">Usamos isso pra calcular seu Índice V e suas metas de nutrição.</p>
+      <div class="form-grid mb-5">
+        <label>Altura (cm)<input type="number" id="ob-height" value="169"></label>
+        <label>Peso atual (kg)<input type="number" id="ob-weight" value="76" step="0.1"></label>
+        <label>Idade<input type="number" id="ob-age" value="30"></label>
+        <label>Sexo
+          <select id="ob-sex">
+            <option value="masculino">Masculino</option>
+            <option value="feminino">Feminino</option>
+          </select>
+        </label>
+      </div>
+      <div style="display:flex; gap:10px">
+        <button class="btn-ghost" data-back>Voltar</button>
+        <button class="btn-primary" data-next>Continuar</button>
+      </div>
+    </div>
+
+    <!-- Passo 3: Objetivo -->
+    <div class="ob-step hidden" data-step="3">
+      <h3 style="font-size:18px; margin-bottom:4px; text-transform:none; color:var(--text)">Qual seu objetivo principal?</h3>
+      <p class="muted mb-4">Isso ajusta suas metas de calorias/proteína e o ritmo de progressão da corrida.</p>
+      <div class="swap-list mb-5" id="ob-objectives"></div>
+      <div style="display:flex; gap:10px">
+        <button class="btn-ghost" data-back>Voltar</button>
+        <button class="btn-primary" data-next id="ob-obj-next" disabled>Continuar</button>
+      </div>
+    </div>
+
+    <!-- Passo 4: Disponibilidade -->
+    <div class="ob-step hidden" data-step="4">
+      <h3 style="font-size:18px; margin-bottom:4px; text-transform:none; color:var(--text)">Quantos dias por semana você treina?</h3>
+      <p class="muted mb-4">Montamos sua grade semanal automaticamente com base nisso.</p>
+      <div class="swap-list mb-5" id="ob-days">
+        <button class="swap-option swap-option-text" data-days="3"><span>3 dias — Full Body</span></button>
+        <button class="swap-option swap-option-text" data-days="4"><span>4 dias — Superior / Inferior</span></button>
+        <button class="swap-option swap-option-text" data-days="5"><span>5 dias — Divisão por grupo muscular</span></button>
+        <button class="swap-option swap-option-text active" data-days="6"><span>6 dias — Divisão completa (padrão)</span></button>
+      </div>
+      <div style="display:flex; gap:10px">
+        <button class="btn-ghost" data-back>Voltar</button>
+        <button class="btn-primary" data-next>Continuar</button>
+      </div>
+    </div>
+
+    <!-- Passo 5: Notificação -->
+    <div class="ob-step hidden" data-step="5">
+      <h3 style="font-size:18px; margin-bottom:4px; text-transform:none; color:var(--text)">Quer um lembrete diário?</h3>
+      <p class="muted mb-4">Avisamos no horário escolhido, nos dias em que ainda não fez o check-in ou o treino. Só funciona com o navegador aberto ou em segundo plano recente — veja a nota em Configurações.</p>
+      <label style="display:flex; align-items:center; gap:10px; margin-bottom:16px; font-size:14px; font-weight:600">
+        <input type="checkbox" id="ob-reminder-enable" style="width:18px; height:18px"> Ativar lembrete diário
+      </label>
+      <div id="ob-reminder-time-wrap" style="display:none; margin-bottom:20px">
+        <label>Horário<input type="time" id="ob-reminder-time" value="07:00"></label>
+      </div>
+      <div style="display:flex; gap:10px">
+        <button class="btn-ghost" data-back>Voltar</button>
+        <button class="btn-primary" data-next>Continuar</button>
+      </div>
+    </div>
+
+    <!-- Passo 6: Resumo -->
+    <div class="ob-step hidden" data-step="6">
+      <h3 style="font-size:18px; margin-bottom:4px; text-transform:none; color:var(--text)">Seu plano está pronto</h3>
+      <div id="ob-summary" class="muted" style="margin-bottom:20px; line-height:1.7"></div>
+      <button class="btn-primary btn-lg" id="ob-finish">Ir para o app</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- ====================== HEADER ====================== -->
 <header class="app-header">
   <div class="brand">
@@ -24,7 +113,7 @@
       </div>
     </div>
   </div>
-  <button id="btn-more-shortcut" class="icon-btn" title="Configurações">
+  <button id="btn-more-shortcut" class="icon-btn" title="Configurações" aria-label="Abrir configurações">
     <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="11" cy="11" r="2.6"/>
       <path d="M11 3.5v2M11 17.5v2M18.5 11h-2M5.5 11h-2M16.2 5.8l-1.4 1.4M7.2 14.8l-1.4 1.4M16.2 16.2l-1.4-1.4M7.2 7.2 5.8 5.8"/>
@@ -36,6 +125,8 @@
 
   <!-- ====================== VIEW: HOJE ====================== -->
   <section id="view-hoje" class="view active">
+
+    <div class="hero-band" id="hero-band"></div>
 
     <div class="card-grid" id="dashboard-cards"></div>
 
@@ -84,7 +175,7 @@
 
   <!-- MODO TREINO (fullscreen overlay) -->
   <div id="workout-mode" class="workout-mode hidden">
-    <button id="wm-close" class="icon-btn wm-close">✕</button>
+    <button id="wm-close" class="icon-btn wm-close" aria-label="Fechar modo treino">✕</button>
     <div class="wm-inner">
       <div class="wm-eyebrow" id="wm-eyebrow">TREINO</div>
       <div id="wm-demo"></div>
@@ -114,11 +205,23 @@
         </div>
       </div>
 
+      <div class="wm-field">
+        <label>RIR (repetições restantes ao falhar) — opcional</label>
+        <div class="rir-scale" id="wm-rir-scale">
+          <button type="button" data-rir="">--</button>
+          <button type="button" data-rir="0">0</button>
+          <button type="button" data-rir="1">1</button>
+          <button type="button" data-rir="2">2</button>
+          <button type="button" data-rir="3">3</button>
+          <button type="button" data-rir="4">4+</button>
+        </div>
+      </div>
+
       <label class="wm-pain-check">
         <input type="checkbox" id="wm-pain"> Senti dor nesta série
       </label>
 
-      <button id="wm-conclude" class="btn-primary btn-lg">✓ CONCLUIR SÉRIE</button>
+      <button id="wm-conclude" class="btn-primary btn-lg">✓ Concluir série</button>
 
       <div id="wm-rest" class="wm-rest hidden">
         <div class="wm-rest-label">DESCANSO</div>
@@ -175,73 +278,83 @@
 
   <!-- ====================== VIEW: EVOLUÇÃO ====================== -->
   <section id="view-evolucao" class="view">
-    <div class="panel">
-      <h3>ÍNDICE V-SHAPE</h3>
-      <div id="vindex-content"></div>
-      <canvas id="vindex-chart" class="chart-canvas"></canvas>
+
+    <div class="tabs" id="evolucao-tabs">
+      <button class="tab-btn active" data-evo-tab="resumo">Resumo</button>
+      <button class="tab-btn" data-evo-tab="detalhes">Detalhes</button>
     </div>
 
-    <div class="panel">
-      <h3>REGISTRO SEMANAL DE MEDIDAS</h3>
-      <form id="body-form" class="form-grid">
-        <label>Peso (kg)<input id="bf-weight" type="number" step="0.1" required></label>
-        <label>Cintura (cm)<input id="bf-waist" type="number" step="0.1"></label>
-        <label>Ombros (cm)<input id="bf-shoulders" type="number" step="0.1"></label>
-        <label>Peito (cm)<input id="bf-chest" type="number" step="0.1"></label>
-        <label>Braço D (cm)<input id="bf-armr" type="number" step="0.1"></label>
-        <label>Braço E (cm)<input id="bf-arml" type="number" step="0.1"></label>
-        <label>Coxa (cm)<input id="bf-thigh" type="number" step="0.1"></label>
-        <button type="submit" class="btn-primary span-2">Salvar medidas</button>
-      </form>
-    </div>
-
-    <div class="panel">
-      <h3>PESO — HISTÓRICO</h3>
-      <canvas id="weight-chart" class="chart-canvas"></canvas>
-    </div>
-
-    <div class="panel">
-      <h3>FOTOS DE PROGRESSO</h3>
-      <div class="photo-upload-row">
-        <label>Ângulo
-          <select id="photo-type">
-            <option value="frente">Frente</option>
-            <option value="costas">Costas</option>
-            <option value="perfil">Perfil</option>
-          </select>
-        </label>
-        <input type="file" id="photo-input" accept="image/*" capture="environment">
+    <div class="evo-tab-panel" data-evo-panel="resumo">
+      <div class="panel">
+        <h3>ÍNDICE V-SHAPE</h3>
+        <div id="vindex-content"></div>
+        <canvas id="vindex-chart" class="chart-canvas"></canvas>
       </div>
-      <div id="photo-gallery" class="photo-gallery"></div>
+
+      <div class="panel">
+        <h3>REGISTRO SEMANAL DE MEDIDAS</h3>
+        <form id="body-form" class="form-grid">
+          <label>Peso (kg)<input id="bf-weight" type="number" step="0.1" required></label>
+          <label>Cintura (cm)<input id="bf-waist" type="number" step="0.1"></label>
+          <label>Ombros (cm)<input id="bf-shoulders" type="number" step="0.1"></label>
+          <label>Peito (cm)<input id="bf-chest" type="number" step="0.1"></label>
+          <label>Braço D (cm)<input id="bf-armr" type="number" step="0.1"></label>
+          <label>Braço E (cm)<input id="bf-arml" type="number" step="0.1"></label>
+          <label>Coxa (cm)<input id="bf-thigh" type="number" step="0.1"></label>
+          <button type="submit" class="btn-primary span-2">Salvar medidas</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h3>PESO — HISTÓRICO</h3>
+        <canvas id="weight-chart" class="chart-canvas"></canvas>
+      </div>
+
+      <div class="panel">
+        <h3>FOTOS DE PROGRESSO</h3>
+        <div class="photo-upload-row">
+          <label>Ângulo
+            <select id="photo-type">
+              <option value="frente">Frente</option>
+              <option value="costas">Costas</option>
+              <option value="perfil">Perfil</option>
+            </select>
+          </label>
+          <input type="file" id="photo-input" accept="image/*" capture="environment">
+        </div>
+        <div id="photo-gallery" class="photo-gallery"></div>
+      </div>
     </div>
 
-    <div class="panel">
-      <h3>COMPARAÇÃO POR SEMANA</h3>
-      <div id="week-compare-controls" class="week-compare-controls"></div>
-      <div id="week-compare-content"></div>
-    </div>
+    <div class="evo-tab-panel hidden" data-evo-panel="detalhes">
+      <div class="panel">
+        <h3>COMPARAÇÃO POR SEMANA</h3>
+        <div id="week-compare-controls" class="week-compare-controls"></div>
+        <div id="week-compare-content"></div>
+      </div>
 
-    <div class="panel">
-      <h3>
-        <svg class="icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M7 4h8v3a4 4 0 0 1-8 0V4z"/>
-          <path d="M7 5H4.5a2 2 0 0 0 0 4H7M15 5h2.5a2 2 0 0 1 0 4H15"/>
-          <path d="M11 11v3M8.5 17h5M9 17c0-1.2.5-2 2-2s2 .8 2 2"/>
-        </svg>
-        Recordes
-      </h3>
-      <div id="records-content"></div>
-    </div>
+      <div class="panel">
+        <h3>
+          <svg class="icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 4h8v3a4 4 0 0 1-8 0V4z"/>
+            <path d="M7 5H4.5a2 2 0 0 0 0 4H7M15 5h2.5a2 2 0 0 1 0 4H15"/>
+            <path d="M11 11v3M8.5 17h5M9 17c0-1.2.5-2 2-2s2 .8 2 2"/>
+          </svg>
+          Recordes
+        </h3>
+        <div id="records-content"></div>
+      </div>
 
-    <div class="panel">
-      <h3>CHECKPOINTS 30 / 60 / 90</h3>
-      <div id="checkpoints-content"></div>
-    </div>
+      <div class="panel">
+        <h3>CHECKPOINTS 30 / 60 / 90</h3>
+        <div id="checkpoints-content"></div>
+      </div>
 
-    <div class="panel">
-      <h3>RELATÓRIO SEMANAL</h3>
-      <div id="weekly-report-content"></div>
-      <button id="btn-generate-report" class="btn-secondary">Gerar relatório desta semana</button>
+      <div class="panel">
+        <h3>RELATÓRIO SEMANAL</h3>
+        <div id="weekly-report-content"></div>
+        <button id="btn-generate-report" class="btn-secondary">Gerar relatório desta semana</button>
+      </div>
     </div>
   </section>
 
@@ -256,39 +369,30 @@
         Grade semanal
       </h3>
       <p class="muted">Toque em um dia pra trocar o conteúdo com outro dia da semana.</p>
-      <div id="weekly-grid-content" style="margin-top:10px"></div>
-    </div>
-
-    <div class="panel">
-      <h3>
-        <svg class="icon" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M11 3s5.5 6.2 5.5 10a5.5 5.5 0 1 1-11 0C5.5 9.2 11 3 11 3z"/>
-        </svg>
-        Água
-      </h3>
-      <div id="water-content"></div>
-    </div>
-
-    <div class="panel">
-      <h3>ALIMENTAÇÃO</h3>
-      <div id="nutrition-content"></div>
+      <div id="weekly-grid-content" class="mt-3"></div>
     </div>
 
     <div class="panel">
       <h3>CONFIGURAÇÕES</h3>
       <form id="settings-form" class="form-grid">
-        <label>Meta de água (mL)<input id="set-water" type="number" min="0"></label>
-        <label>Meta de calorias (kcal)<input id="set-cal" type="number" min="0"></label>
-        <label>Meta de proteína (g)<input id="set-prot" type="number" min="0"></label>
-        <label>Meta de carboidrato (g)<input id="set-carb" type="number" min="0"></label>
-        <label>Meta de gordura (g)<input id="set-fat" type="number" min="0"></label>
         <label>Descanso padrão (s)<input id="set-rest" type="number" min="0"></label>
+        <label class="span-2" style="flex-direction:row; align-items:center; gap:8px; text-transform:none">
+          <input type="checkbox" id="set-reminder-enable" style="width:16px; height:16px"> Lembrete diário ativado
+        </label>
+        <label>Horário do lembrete<input id="set-reminder-time" type="time"></label>
         <button type="submit" class="btn-primary span-2">Salvar configurações</button>
       </form>
+      <p class="muted mt-3">Nota técnica: como o app não tem servidor, o lembrete só dispara quando o navegador consegue rodar em segundo plano (varia por aparelho/navegador). Um lembrete garantido a qualquer hora, com o app fechado, exigiria um servidor de push — ver seção "Conta" abaixo.</p>
+    </div>
+
+    <div class="panel">
+      <h3>CONTA</h3>
+      <div id="account-content"></div>
     </div>
 
     <div class="panel">
       <h3>BACKUP</h3>
+
       <p class="muted">Todos os dados ficam salvos apenas neste dispositivo. Exporte regularmente.</p>
       <div class="backup-row">
         <button id="btn-export" class="btn-primary">Exportar backup</button>
@@ -353,8 +457,10 @@
 <div id="toast" class="toast hidden"></div>
 
 <script src="js/storage.js"></script>
+<script src="js/onboarding.js"></script>
 <script src="js/charts.js"></script>
 <script src="js/exercise-demos.js"></script>
+<script src="js/exercise-metadata.js"></script>
 <script src="js/exercise-catalog.js"></script>
 <script src="js/workouts.js"></script>
 <script src="js/running.js"></script>

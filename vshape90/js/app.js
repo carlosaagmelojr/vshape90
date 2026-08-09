@@ -24,6 +24,12 @@ const App = {
     this.bindMais();
     this.renderAll();
     this.registerServiceWorker();
+    this.checkDailyReminder();
+
+    const data = Storage.load();
+    if (!data.meta.onboardingComplete) {
+      this.startOnboarding();
+    }
   },
 
   /* ---------------- Navegação ---------------- */
@@ -79,6 +85,21 @@ const App = {
     const shoulders = lastBody ? lastBody.shoulders : null;
     const vIndex = (waist && shoulders) ? (shoulders / waist) : null;
 
+    const withV = data.bodyLogs.filter(b => b.waist && b.shoulders);
+    const firstV = withV.length ? withV[0].shoulders / withV[0].waist : null;
+    const vTrendText = (vIndex && firstV && withV.length > 1)
+      ? `<strong>${vIndex >= firstV ? '+' : ''}${((vIndex - firstV) / firstV * 100).toFixed(1)}%</strong> desde o início`
+      : 'registre ombros e cintura pra acompanhar a evolução';
+
+    // Hero: o resultado principal do app (Índice V) recebe tratamento
+    // tipográfico próprio, sem borda de card — não compete com as
+    // métricas secundárias abaixo.
+    document.getElementById('hero-band').innerHTML = `
+      <div class="hero-label">Índice V — dia ${dayNum} de 90</div>
+      <div class="hero-value">${vIndex ? vIndex.toFixed(2) : '--'}<span class="hero-unit">ombros / cintura</span></div>
+      <div class="hero-sub">${vIndex ? vTrendText : 'Registre suas medidas em Evolução pra ver seu Índice V aqui.'}</div>
+    `;
+
     const weekSessions = Workouts.sessionsInRange(7);
     const totalPossibleWorkouts = 6; // seg-sáb
     const doneWorkouts = weekSessions.filter(s => s.completed && s.dayKey !== 'domingo').length;
@@ -87,22 +108,20 @@ const App = {
 
     const sem = Recovery.semaphore();
 
+    // Métricas secundárias (apoiam o resultado principal, não competem com ele)
     const cards = [
       { label: 'Peso', value: `${weight.toFixed(1)} kg`, sub: lastBody ? '' : 'sem registro ainda' },
-      { label: 'Cintura', value: waist ? `${waist.toFixed(1)} cm` : '--', sub: '' },
-      { label: 'Ombros', value: shoulders ? `${shoulders.toFixed(1)} cm` : '--', sub: '' },
-      { label: 'Índice V', value: vIndex ? vIndex.toFixed(2) : '--', sub: 'ombros / cintura' },
       { label: 'Treinos (7 dias)', value: `${doneWorkouts}/${totalPossibleWorkouts}`, sub: '' },
       { label: 'Corrida (7 dias)', value: `${weekRunKm.toFixed(1)} km`, sub: '' },
-      { label: 'Recuperação', dot: sem.level, value: sem.label, sub: '', wide: true }
+      { label: 'Recuperação', dot: sem.level, value: sem.label, sub: '' }
     ];
 
     const grid = document.getElementById('dashboard-cards');
     grid.innerHTML = cards.map(c => `
       <div class="dash-card ${c.wide ? 'wide' : ''} ${c.accent ? 'accent' : ''}">
         <div class="label">${c.label}</div>
-        <div class="value" style="${c.dot ? 'display:flex;align-items:center;gap:9px' : ''}">
-          ${c.dot ? `<span class="status-dot ${c.dot}"></span>` : ''}${c.value}
+        <div class="value" style="${c.dot ? 'display:flex;align-items:flex-start;gap:8px' : ''}">
+          ${c.dot ? `<span class="status-dot ${c.dot}" style="margin-top:6px"></span>` : ''}${c.value}
         </div>
         ${c.sub ? `<div class="sub">${c.sub}</div>` : ''}
       </div>
@@ -127,7 +146,7 @@ const App = {
     if (!plan || !plan.exercises.length) {
       el.innerHTML = `
         <p class="muted">Hoje é dia de recuperação ativa. Sem musculação programada — mas se quiser treinar, dá pra escolher grupos musculares ou usar a ficha de outro dia.</p>
-        <button class="btn-secondary" id="btn-goto-rest-options" style="margin-top:10px">Ver opções de treino</button>
+        <button class="btn-secondary mt-3" id="btn-goto-rest-options">Ver opções de treino</button>
       `;
       document.getElementById('btn-goto-rest-options').addEventListener('click', () => {
         this.goTo('treino');
@@ -138,7 +157,7 @@ const App = {
     }
     el.innerHTML = `
       <p style="font-size:16px;font-weight:800;margin-bottom:10px">${plan.name}</p>
-      <button class="btn-primary" id="btn-start-today-workout">INICIAR TREINO</button>
+      <button class="btn-primary" id="btn-start-today-workout">Iniciar treino</button>
     `;
     document.getElementById('btn-start-today-workout').addEventListener('click', () => {
       this.goTo('treino');
@@ -185,8 +204,8 @@ const App = {
     if (existing) {
       el.innerHTML = `
         <div class="semaphore-badge ${sem.level}"><span class="status-dot ${sem.level}"></span> ${sem.label}</div>
-        <p class="muted" style="margin-top:8px">${Recovery.recommendation(sem)}</p>
-        <button class="btn-ghost" id="btn-edit-checkin" style="margin-top:10px">Editar check-in de hoje</button>
+        <p class="muted mt-2">${Recovery.recommendation(sem)}</p>
+        <button class="btn-ghost mt-3" id="btn-edit-checkin">Editar check-in de hoje</button>
       `;
       document.getElementById('btn-edit-checkin').addEventListener('click', () => this.renderCheckinForm(existing));
       return;
@@ -211,9 +230,9 @@ const App = {
       ${scaleRow('stress', 'Estresse', v.stress)}
       <label style="display:block;font-size:12.5px;color:var(--text-secondary);margin-bottom:10px">
         Horas de sono
-        <input type="number" id="ci-sleephours" min="0" max="14" step="0.5" value="${v.sleepHours}" style="margin-top:5px">
+        <input type="number" id="ci-sleephours" min="0" max="14" step="0.5" value="${v.sleepHours}" class="mt-1">
       </label>
-      <p class="muted" style="margin-bottom:6px">Está sentindo alguma dor?</p>
+      <p class="muted mb-2">Está sentindo alguma dor?</p>
       <div class="pain-toggle">
         <button type="button" id="ci-pain-yes" class="${v.pain ? 'active' : ''}">Sim</button>
         <button type="button" id="ci-pain-no" class="${!v.pain ? 'active' : ''}">Não</button>
@@ -224,7 +243,7 @@ const App = {
             `<option value="${r}" ${v.painRegion === r ? 'selected' : ''}>${r[0].toUpperCase() + r.slice(1)}</option>`).join('')}
         </select>
       </div>
-      <button class="btn-primary" id="btn-save-checkin">Salvar check-in</button>
+      <button class="btn-secondary" id="btn-save-checkin">Salvar check-in</button>
     `;
 
     const state = { ...v };
@@ -303,7 +322,7 @@ const App = {
         <button class="btn-primary" id="btn-start-day">Iniciar treino do dia</button>
       </div>
       ${plan.exercises.map((ex, idx) => this.exerciseCardHTML(ex, dayKey, idx)).join('')}
-      <button class="btn-ghost" id="btn-add-exercise" style="margin-bottom:12px">+ Adicionar exercício</button>
+      <button class="btn-ghost mb-3" id="btn-add-exercise">+ Adicionar exercício</button>
       <div class="panel">
         <h3>${routine.label}</h3>
         <p class="muted">${routine.minutes}</p>
@@ -327,6 +346,67 @@ const App = {
     content.querySelectorAll('[data-remove]').forEach(btn => {
       btn.addEventListener('click', () => this.removeExercise(dayKey, Number(btn.dataset.remove)));
     });
+    content.querySelectorAll('[data-detail]').forEach(btn => {
+      btn.addEventListener('click', () => this.showExerciseDetail(plan.exercises[Number(btn.dataset.detail)]));
+    });
+  },
+
+  /* Tela de detalhes do exercício: boneco com destaque muscular +
+     metadados (músculos, execução, respiração, erros comuns, dicas).
+     Metadados vêm por PADRÃO DE MOVIMENTO (ExerciseMetadata), então
+     cobrem automaticamente qualquer exercício — catálogo, trocado ou
+     personalizado — sem precisar cadastrar cada um manualmente. */
+  showExerciseDetail(ex) {
+    const meta = ExerciseMetadata.get(ex.pattern);
+    const wrap = document.createElement('div');
+    wrap.className = 'workout-mode';
+    wrap.innerHTML = `
+      <button class="icon-btn wm-close" id="detail-close" aria-label="Fechar detalhes">✕</button>
+      <div class="wm-inner" style="text-align:left; max-width:420px; overflow-y:auto; max-height:90vh">
+        <div style="text-align:center">
+          ${ExerciseDemos.xl(ex.pattern, true)}
+        </div>
+        <div class="muscle-legend" style="justify-content:center">
+          <div class="muscle-legend-item"><span class="muscle-legend-dot" style="background:${ExerciseMetadata.MUSCLE_COLORS.primary}"></span>Principal</div>
+          <div class="muscle-legend-item"><span class="muscle-legend-dot" style="background:${ExerciseMetadata.MUSCLE_COLORS.secondary}"></span>Secundário</div>
+          <div class="muscle-legend-item"><span class="muscle-legend-dot" style="background:${ExerciseMetadata.MUSCLE_COLORS.stabilizer}"></span>Estabilizador</div>
+        </div>
+        <h2 style="font-size:20px; text-align:center; margin-bottom:2px">${escapeHtml(ex.name)}</h2>
+        <p class="muted" style="text-align:center; margin-bottom:16px">${meta.category} · ${meta.type} · ${meta.level}</p>
+
+        <div class="exercise-detail-tags">
+          <span class="exercise-detail-tag">Principal: ${meta.primaryMuscle}</span>
+          ${meta.secondaryMuscles.map(m => `<span class="exercise-detail-tag">${m}</span>`).join('')}
+          <span class="exercise-detail-tag">${meta.equipment}</span>
+        </div>
+
+        <div class="exercise-detail-section">
+          <h4>Posição inicial</h4>
+          <p>${meta.startPosition}</p>
+        </div>
+        <div class="exercise-detail-section">
+          <h4>Execução</h4>
+          <p>${meta.execution}</p>
+        </div>
+
+        <div class="breathing-row">
+          <div class="breathing-item"><div class="label">Inspire</div><div class="value">${meta.breathing.inhale}</div></div>
+          <div class="breathing-item"><div class="label">Expire</div><div class="value">${meta.breathing.exhale}</div></div>
+        </div>
+
+        <div class="exercise-detail-section">
+          <h4>Erros comuns</h4>
+          <ul>${meta.commonErrors.map(e => `<li>${e}</li>`).join('')}</ul>
+        </div>
+        <div class="exercise-detail-section">
+          <h4>Dicas</h4>
+          <ul>${meta.tips.map(t => `<li>${t}</li>`).join('')}</ul>
+        </div>
+        <p class="muted" style="font-size:11px">Ilustração esquemática original (não é anatomia real) — músculos estabilizadores relevantes variam por pessoa e execução.</p>
+      </div>
+    `;
+    document.body.appendChild(wrap);
+    document.getElementById('detail-close').addEventListener('click', () => wrap.remove());
   },
 
   removeExercise(dayKey, idx) {
@@ -347,10 +427,10 @@ const App = {
     wrap.className = 'workout-mode';
     const groupEntries = Object.entries(ExerciseCatalog.GROUP_LABELS);
     wrap.innerHTML = `
-      <button class="icon-btn wm-close" id="add-ex-close">✕</button>
+      <button class="icon-btn wm-close" id="add-ex-close" aria-label="Fechar">✕</button>
       <div class="wm-inner" style="text-align:left; max-width:420px">
         <h3 style="margin-bottom:2px; font-size:18px">Adicionar exercício</h3>
-        <p class="muted" style="margin-bottom:14px">Escolha o grupo muscular</p>
+        <p class="muted mb-4">Escolha o grupo muscular</p>
         <div class="swap-list" id="add-ex-groups">
           ${groupEntries.map(([key, label]) => `<button class="swap-option swap-option-text" data-group="${key}"><span>${label}</span></button>`).join('')}
         </div>
@@ -369,8 +449,8 @@ const App = {
     wrap.querySelector('.wm-inner').innerHTML = `
       <div class="wm-eyebrow">${groupLabel}</div>
       <h3 style="margin-bottom:2px; font-size:18px">Escolha o exercício</h3>
-      <p class="muted" style="margin-bottom:14px">Ou digite um exercício personalizado</p>
-      <div class="swap-list" style="margin-bottom:14px">
+      <p class="muted mb-4">Ou digite um exercício personalizado</p>
+      <div class="swap-list mb-4">
         ${alternatives.map(alt => `
           <button class="swap-option" data-name="${alt.name}" data-pattern="${alt.pattern}">
             ${ExerciseDemos.thumb(alt.pattern)}
@@ -384,7 +464,7 @@ const App = {
         <input type="text" id="add-ex-custom-input" placeholder="Ex: Remada cavalinho">
       </div>
       <div id="add-ex-config" style="display:none">
-        <div class="form-grid" style="margin-bottom:14px">
+        <div class="form-grid mb-4">
           <label>Séries<input type="number" id="add-ex-sets" value="3" min="1" max="8"></label>
           <label>Descanso (s)<input type="number" id="add-ex-rest" value="90" min="0" step="15"></label>
           <label>Reps mín.<input type="number" id="add-ex-repslow" value="8" min="1"></label>
@@ -439,11 +519,11 @@ const App = {
     wrap.className = 'workout-mode';
     const groupEntries = Object.entries(ExerciseCatalog.GROUP_LABELS);
     wrap.innerHTML = `
-      <button class="icon-btn wm-close" id="mg-close">✕</button>
+      <button class="icon-btn wm-close" id="mg-close" aria-label="Fechar">✕</button>
       <div class="wm-inner" style="text-align:left; max-width:420px">
         <h3 style="margin-bottom:2px; font-size:18px">Escolher grupos musculares</h3>
-        <p class="muted" style="margin-bottom:14px">Selecione um ou mais grupos. Monto 2 exercícios de cada.</p>
-        <div class="swap-list" id="mg-list" style="margin-bottom:16px">
+        <p class="muted mb-4">Selecione um ou mais grupos. Monto 2 exercícios de cada.</p>
+        <div class="swap-list mb-4" id="mg-list">
           ${groupEntries.map(([key, label]) => `<button class="swap-option swap-option-text" data-group="${key}"><span>${label}</span></button>`).join('')}
         </div>
         <button class="btn-primary" id="mg-confirm">Montar treino</button>
@@ -483,10 +563,10 @@ const App = {
     const wrap = document.createElement('div');
     wrap.className = 'workout-mode';
     wrap.innerHTML = `
-      <button class="icon-btn wm-close" id="ficha-close">✕</button>
+      <button class="icon-btn wm-close" id="ficha-close" aria-label="Fechar">✕</button>
       <div class="wm-inner" style="text-align:left; max-width:420px">
         <h3 style="margin-bottom:2px; font-size:18px">Usar ficha de outro dia</h3>
-        <p class="muted" style="margin-bottom:14px">O treino de hoje será registrado normalmente, contando pra sua sequência.</p>
+        <p class="muted mb-4">O treino de hoje será registrado normalmente, contando pra sua sequência.</p>
         <div class="swap-list">
           ${options.map(k => `
             <button class="swap-option swap-option-text" data-day="${k}">
@@ -521,11 +601,11 @@ const App = {
     const wrap = document.createElement('div');
     wrap.className = 'workout-mode';
     wrap.innerHTML = `
-      <button class="icon-btn wm-close" id="swap-close">✕</button>
+      <button class="icon-btn wm-close" id="swap-close" aria-label="Fechar">✕</button>
       <div class="wm-inner" style="text-align:left; max-width:420px">
         <div class="wm-eyebrow">${groupLabel}</div>
         <h3 style="margin-bottom:2px; font-size:18px">Trocar exercício</h3>
-        <p class="muted" style="margin-bottom:14px">Exercício atual: ${current.name}</p>
+        <p class="muted mb-4">Exercício atual: ${escapeHtml(current.name)}</p>
         <div class="swap-list">
           ${alternatives.map(alt => `
             <button class="swap-option ${alt.name === current.name ? 'active' : ''}" data-alt-id="${alt.id}" data-alt-name="${alt.name}" data-alt-pattern="${alt.pattern}">
@@ -534,7 +614,7 @@ const App = {
             </button>
           `).join('')}
         </div>
-        ${isCustomized ? `<button class="btn-ghost" id="swap-restore" style="margin-top:14px">Restaurar exercício padrão do dia</button>` : ''}
+        ${isCustomized ? `<button class="btn-ghost mt-4" id="swap-restore">Restaurar exercício padrão do dia</button>` : ''}
       </div>
     `;
     document.body.appendChild(wrap);
@@ -581,16 +661,18 @@ const App = {
     return `
       <div class="exercise-card">
         <div class="ex-head-row">
-          ${ExerciseDemos.thumb(ex.pattern)}
+          <button class="ex-thumb-btn" data-detail="${idx}" aria-label="Ver detalhes de ${escapeHtml(ex.name)}" title="Ver detalhes">
+            ${ExerciseDemos.thumb(ex.pattern)}
+          </button>
           <div style="flex:1; min-width:0">
             <div class="ex-head">
-              <div class="ex-name">${ex.name}</div>
+              <div class="ex-name">${escapeHtml(ex.name)}</div>
               <div style="display:flex; align-items:center; gap:6px; flex:none">
                 <div class="rest-chip">${ex.restSec}s</div>
-                <button class="icon-btn ex-swap-btn" data-swap="${idx}" title="Trocar exercício">
+                <button class="icon-btn ex-swap-btn" data-swap="${idx}" title="Trocar exercício" aria-label="Trocar ${escapeHtml(ex.name)} por outro exercício">
                   <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h11M13 4.5 16 8l-3 3.5"/><path d="M17 14H6M9 10.5 6 14l3 3.5"/></svg>
                 </button>
-                <button class="icon-btn ex-remove-btn" data-remove="${idx}" title="Remover exercício">
+                <button class="icon-btn ex-remove-btn" data-remove="${idx}" title="Remover exercício" aria-label="Remover ${escapeHtml(ex.name)} do treino">
                   <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6h12M9 6V4.5h4V6M6.5 6l.7 11a1 1 0 0 0 1 .9h5.6a1 1 0 0 0 1-.9l.7-11"/></svg>
                 </button>
               </div>
@@ -602,10 +684,10 @@ const App = {
         ${plateau.isPlateau ? `<div class="ex-suggestion plateau">Sem evolução de carga há ${plateau.sessionsConsidered} sessões (~${plateau.daysSpan} dias). Considere uma semana de deload: reduza cerca de 10–20% do peso por 5–7 dias.</div>` : ''}
         <div class="ex-actions">
           <button class="btn-secondary" data-hist="${ex.id}">Histórico</button>
-          <button class="btn-primary" data-record="${ex.id}">Registrar</button>
+          <button class="btn-secondary" data-record="${ex.id}">Registrar</button>
         </div>
         <a class="ex-external-link" href="${EXTERNAL_GIF_SITE}" target="_blank" rel="noopener noreferrer">
-          Ver execução real no Gif do Treino
+          Ver execução ↗
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3H3v10h10v-3"/><path d="M9 3h4v4"/><path d="M13 3 7 9"/></svg>
         </a>
       </div>
@@ -621,29 +703,29 @@ const App = {
         <span>${h.date}</span>
         <span>${h.maxWeight}kg</span>
         <span>${h.volume}kg vol</span>
-        <button class="icon-btn ex-edit-log-btn" data-log-id="${h.id}" title="Editar registro">
+        <button class="icon-btn ex-edit-log-btn" data-log-id="${h.id}" title="Editar registro" aria-label="Editar registro de ${h.date}">
           <svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5 17.5 7.5 8 17H5v-3z"/></svg>
         </button>
       </div>
-    `).join('') || '<p class="empty-state">Sem histórico ainda.</p>';
+    `).join('') || '<p class="empty-state">Sem histórico ainda. Toque em "Registrar" para começar.</p>';
     const headerRow = hist.length ? `<div class="ex-history-row ex-history-row-editable"><span>Data</span><span>Carga</span><span>Volume</span><span></span></div>` : '';
 
     const wrap = document.createElement('div');
     wrap.className = 'workout-mode';
     wrap.innerHTML = `
-      <button class="icon-btn wm-close" id="hist-close">✕</button>
+      <button class="icon-btn wm-close" id="hist-close" aria-label="Fechar histórico">✕</button>
       <div class="wm-inner" style="text-align:left">
-        <h3 style="margin-bottom:2px">${ex.name}</h3>
-        <p class="muted" style="margin-bottom:14px">Histórico e evolução</p>
+        <h3 class="mb-1">${escapeHtml(ex.name)}</h3>
+        <p class="muted mb-4">Histórico e evolução</p>
         ${stats ? `
-          <div class="card-grid" style="margin-bottom:14px">
+          <div class="card-grid mb-4">
             <div class="dash-card"><div class="label">Carga máx.</div><div class="value">${stats.maxWeight}kg</div></div>
             <div class="dash-card"><div class="label">Volume máx.</div><div class="value">${stats.maxVolume}kg</div></div>
             <div class="dash-card"><div class="label">Últ. carga</div><div class="value">${Workouts.maxWeightOf(stats.last) || stats.last.maxWeight}kg</div></div>
             <div class="dash-card"><div class="label">Evolução 30d</div><div class="value">${stats.evolution30 !== null ? stats.evolution30.toFixed(1) + '%' : '--'}</div></div>
           </div>
-          <canvas id="hist-chart" class="chart-canvas" style="margin-bottom:14px"></canvas>
-        ` : '<p class="empty-state">Sem histórico ainda.</p>'}
+          <canvas id="hist-chart" class="chart-canvas mb-4"></canvas>
+        ` : '<p class="empty-state">Sem histórico ainda. Toque em "Registrar" para começar.</p>'}
         <div id="hist-rows-container">${headerRow}${rows}</div>
       </div>
     `;
@@ -668,23 +750,24 @@ const App = {
     const wrap = document.createElement('div');
     wrap.className = 'workout-mode';
     wrap.innerHTML = `
-      <button class="icon-btn wm-close" id="edit-log-close">✕</button>
+      <button class="icon-btn wm-close" id="edit-log-close" aria-label="Fechar edição">✕</button>
       <div class="wm-inner" style="text-align:left; max-width:380px">
         <h3 style="margin-bottom:2px; font-size:18px">Editar registro</h3>
-        <p class="muted" style="margin-bottom:14px">${entry.date}</p>
+        <p class="muted mb-4">${entry.date}</p>
         <div id="edit-log-sets" style="display:flex; flex-direction:column; gap:10px; margin-bottom:14px">
           ${entry.sets.map((s, i) => `
             <div class="form-grid">
               <label>Série ${i + 1} — Carga (kg)<input type="number" step="0.5" class="edit-set-weight" data-idx="${i}" value="${s.weight}"></label>
               <label>Repetições<input type="number" class="edit-set-reps" data-idx="${i}" value="${s.reps}"></label>
+              <label class="span-2">RIR (opcional)<input type="number" min="0" max="10" class="edit-set-rir" data-idx="${i}" value="${s.rir ?? ''}"></label>
             </div>
           `).join('')}
         </div>
         <label class="wm-pain-check" style="justify-content:flex-start">
           <input type="checkbox" id="edit-log-pain" ${entry.painFlag ? 'checked' : ''}> Houve dor nesta sessão
         </label>
-        <button class="btn-primary" id="edit-log-save" style="margin-top:16px">Salvar correção</button>
-        <button class="btn-danger" id="edit-log-delete" style="margin-top:10px">Apagar este registro</button>
+        <button class="btn-primary mt-4" id="edit-log-save">Salvar correção</button>
+        <button class="btn-danger mt-3" id="edit-log-delete">Apagar este registro</button>
       </div>
     `;
     document.body.appendChild(wrap);
@@ -692,7 +775,8 @@ const App = {
     document.getElementById('edit-log-save').addEventListener('click', () => {
       const weights = wrap.querySelectorAll('.edit-set-weight');
       const reps = wrap.querySelectorAll('.edit-set-reps');
-      const sets = Array.from(weights).map((w, i) => ({ weight: w.value, reps: reps[i].value }));
+      const rirs = wrap.querySelectorAll('.edit-set-rir');
+      const sets = Array.from(weights).map((w, i) => ({ weight: w.value, reps: reps[i].value, rir: rirs[i].value }));
       Workouts.updateExerciseLog(exerciseId, logId, { sets, painFlag: document.getElementById('edit-log-pain').checked });
       this.toast('Registro corrigido.');
       wrap.remove();
@@ -722,11 +806,23 @@ const App = {
     document.getElementById('wm-reps-plus').addEventListener('click', () => this.wmAdjust('reps', 1));
     document.getElementById('wm-conclude').addEventListener('click', () => this.wmConcludeSet());
     document.getElementById('wm-skip-rest').addEventListener('click', () => this.wmSkipRest());
+    document.getElementById('wm-rir-scale').querySelectorAll('button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this._wmSelectedRir = btn.dataset.rir;
+        document.getElementById('wm-rir-scale').querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
   },
 
   openWorkoutMode(dayKey, startIndex) {
     const plan = Workouts.planForDay(dayKey);
-    if (!plan.exercises.length) return;
+    if (!plan.exercises.length) {
+      // HIGH corrigido: antes falhava em silêncio (clique sem nenhum
+      // feedback) se chamado num dia sem exercícios.
+      this.toast('Esse dia não tem exercícios programados.');
+      return;
+    }
     const session = Workouts.startSession(dayKey);
     this.wm = {
       dayKey,
@@ -762,6 +858,16 @@ const App = {
   },
 
   closeWorkoutMode() {
+    // BLOCKER corrigido: fechar no meio de um exercício descartava em
+    // silêncio as séries já concluídas (ficavam só em memória, nunca
+    // salvas até a ÚLTIMA série do exercício ser concluída). Agora, em
+    // vez de só avisar, salvamos o progresso parcial de verdade — o
+    // usuário nunca perde uma série que já registrou.
+    if (this.wm && this.wm.buffer && this.wm.buffer.length > 0) {
+      const ex = this.wmCurrentExercise();
+      Workouts.recordExercise(ex.id, { sets: this.wm.buffer, painFlag: !!this.wm.painFlag });
+      this.toast(`${this.wm.buffer.length} série(s) salvas antes de sair.`);
+    }
     this.clearRestTimer();
     document.getElementById('workout-mode').classList.add('hidden');
     document.getElementById('wm-rest').classList.add('hidden');
@@ -780,7 +886,7 @@ const App = {
     const prevInSession = this.wm.buffer.length ? this.wm.buffer[this.wm.buffer.length - 1] : null;
 
     document.getElementById('wm-eyebrow').textContent = (this.wm.dayLabel || '').toUpperCase();
-    document.getElementById('wm-demo').innerHTML = ExerciseDemos.large(ex.pattern);
+    document.getElementById('wm-demo').innerHTML = ExerciseDemos.large(ex.pattern, true);
     document.getElementById('wm-exname').textContent = ex.name.toUpperCase();
     document.getElementById('wm-external-link').firstChild.textContent = `Ver "${ex.name}" no Gif do Treino `;
     document.getElementById('wm-series').textContent = `Série ${this.wm.setIndex + 1}/${ex.sets}`;
@@ -798,6 +904,8 @@ const App = {
     document.getElementById('wm-weight').value = suggestedWeight;
     document.getElementById('wm-reps').value = suggestedReps;
     document.getElementById('wm-pain').checked = false;
+    this._wmSelectedRir = '';
+    document.getElementById('wm-rir-scale').querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.rir === ''));
 
     document.getElementById('wm-rest').classList.add('hidden');
     document.getElementById('wm-conclude').style.display = '';
@@ -816,7 +924,8 @@ const App = {
     const weight = Number(document.getElementById('wm-weight').value) || 0;
     const reps = Number(document.getElementById('wm-reps').value) || 0;
     const pain = document.getElementById('wm-pain').checked;
-    this.wm.buffer.push({ weight, reps });
+    const rir = this._wmSelectedRir || '';
+    this.wm.buffer.push({ weight, reps, rir });
     if (pain) this.wm.painFlag = true;
 
     const ex = this.wmCurrentExercise();
@@ -937,12 +1046,12 @@ const App = {
     const week = Running.planForWeek(Running.currentWeekNumber());
     document.getElementById('run-plan-content').innerHTML = `
       <p class="muted">Semana ${week.week} do plano de 90 dias rumo aos 10km.</p>
-      <div class="card-grid" style="margin-top:10px">
+      <div class="card-grid mt-3">
         <div class="dash-card"><div class="label">Leve (seg)</div><div class="value">${week.leve} km</div></div>
         <div class="dash-card"><div class="label">Intervalado (qua)</div><div class="value">${week.intervalado} km</div></div>
         <div class="dash-card"><div class="label">Longão (sex)</div><div class="value">${week.longao} km</div></div>
       </div>
-      ${workout ? `<p style="margin-top:10px" class="muted">Hoje: ${workout.label} · meta ~${workout.targetKm}km</p>` : `<p style="margin-top:10px" class="muted">Sem corrida programada para hoje.</p>`}
+      ${workout ? `<p class="mt-3 muted">Hoje: ${workout.label} · meta ~${workout.targetKm}km</p>` : `<p class="mt-3 muted">Sem corrida programada para hoje.</p>`}
     `;
 
     const logs = Running.all();
@@ -951,7 +1060,7 @@ const App = {
 
     const histEl = document.getElementById('run-history');
     if (!logs.length) {
-      histEl.innerHTML = '<p class="empty-state">Nenhuma corrida registrada ainda.</p>';
+      histEl.innerHTML = '<p class="empty-state">Nenhuma corrida registrada ainda. Registre a próxima logo acima.</p>';
     } else {
       const header = `<div class="ex-history-row"><span>Data</span><span>Distância</span><span>Pace</span></div>`;
       const rows = logs.slice().reverse().slice(0, 20).map(l => `
@@ -969,6 +1078,14 @@ const App = {
      VIEW: EVOLUÇÃO
      ============================================================ */
   bindEvolucao() {
+    document.getElementById('evolucao-tabs').querySelectorAll('[data-evo-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.evoTab;
+        document.getElementById('evolucao-tabs').querySelectorAll('[data-evo-tab]').forEach(b => b.classList.toggle('active', b === btn));
+        document.querySelectorAll('.evo-tab-panel').forEach(p => p.classList.toggle('hidden', p.dataset.evoPanel !== tab));
+      });
+    });
+
     document.getElementById('body-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const data = Storage.load();
@@ -1024,7 +1141,7 @@ const App = {
       vEl.innerHTML = `
         <p>Início: <strong>${first.toFixed(2)}</strong> → Atual: <strong>${last.toFixed(2)}</strong>
         (<span style="color:${variation >= 0 ? 'var(--positive)' : 'var(--danger)'}">${variation >= 0 ? '+' : ''}${variation.toFixed(1)}%</span>)</p>
-        <p class="muted" style="margin-top:4px">Indicador apenas para acompanhamento visual — não é diagnóstico médico.</p>
+        <p class="muted mt-1">Indicador apenas para acompanhamento visual — não é diagnóstico médico.</p>
       `;
     } else {
       vEl.innerHTML = '<p class="empty-state">Registre ombros e cintura para ver o índice V.</p>';
@@ -1049,7 +1166,7 @@ const App = {
     const data = Storage.load();
     const gallery = document.getElementById('photo-gallery');
     const metas = data.photoMeta.slice().reverse().slice(0, 12);
-    if (!metas.length) { gallery.innerHTML = '<p class="empty-state">Nenhuma foto ainda.</p>'; return; }
+    if (!metas.length) { gallery.innerHTML = '<p class="empty-state">Nenhuma foto ainda. Tire a primeira foto de frente para começar a comparação semanal.</p>'; return; }
     gallery.innerHTML = metas.map(m => `<div class="photo-item" data-id="${m.id}">
         <img id="img-${m.id}" alt="${m.type}">
         <span class="photo-tag">${m.type} · ${m.date.slice(5)}</span>
@@ -1076,16 +1193,22 @@ const App = {
     const data = Storage.load();
     const start = new Date(data.meta.startDate);
     const curWeek = Math.max(1, Math.ceil((new Date() - start) / 86400000 / 7));
-    const opts = Array.from({ length: curWeek }, (_, i) => i + 1);
+    const isPro = data.pro.active;
+    const FREE_WEEK_LIMIT = 4;
+    const minAllowedWeek = isPro ? 1 : Math.max(1, curWeek - FREE_WEEK_LIMIT + 1);
+    const opts = Array.from({ length: curWeek - minAllowedWeek + 1 }, (_, i) => minAllowedWeek + i);
     const controls = document.getElementById('week-compare-controls');
     controls.innerHTML = `
-      <select id="cmp-week-a">${opts.map(w => `<option value="${w}" ${w === 1 ? 'selected' : ''}>Semana ${w}</option>`).join('')}</select>
+      <select id="cmp-week-a">${opts.map(w => `<option value="${w}" ${w === opts[0] ? 'selected' : ''}>Semana ${w}</option>`).join('')}</select>
       <span style="align-self:center;color:var(--text-secondary)">vs</span>
       <select id="cmp-week-b">${opts.map(w => `<option value="${w}" ${w === curWeek ? 'selected' : ''}>Semana ${w}</option>`).join('')}</select>
+      ${!isPro && curWeek > FREE_WEEK_LIMIT ? `<p class="muted" style="width:100%; margin-top:4px">Plano gratuito compara só as últimas ${FREE_WEEK_LIMIT} semanas. <a href="#" id="cmp-pro-link" style="color:var(--accent)">Ver plano PRO</a></p>` : ''}
     `;
     const update = () => this.renderWeekCompare(Number(document.getElementById('cmp-week-a').value), Number(document.getElementById('cmp-week-b').value));
     document.getElementById('cmp-week-a').addEventListener('change', update);
     document.getElementById('cmp-week-b').addEventListener('change', update);
+    const proLink = document.getElementById('cmp-pro-link');
+    if (proLink) proLink.addEventListener('click', (e) => { e.preventDefault(); this.goTo('mais'); });
     update();
   },
 
@@ -1109,7 +1232,7 @@ const App = {
       <div class="compare-col">
         ${d.photo ? `<img src="${d.photo.dataURL}">` : ''}
         <strong>${label}</strong>
-        ${d.body ? `<div class="muted" style="margin-top:4px">${d.body.weight}kg${d.body.waist ? ` · cintura ${d.body.waist}cm` : ''}</div>` : `<div class="muted" style="margin-top:4px">sem registro</div>`}
+        ${d.body ? `<div class="muted mt-1">${d.body.weight}kg${d.body.waist ? ` · cintura ${d.body.waist}cm` : ''}</div>` : `<div class="muted mt-1">sem registro</div>`}
       </div>`;
     content.innerHTML = `<div class="compare-grid">${col('Semana ' + weekA, a)}${col('Semana ' + weekB, b)}</div>`;
   },
@@ -1217,27 +1340,65 @@ const App = {
     const data = Storage.load();
     const el = document.getElementById('weekly-report-content');
     const last = data.weeklyReports[data.weeklyReports.length - 1];
-    if (!last) { el.innerHTML = '<p class="empty-state">Nenhum relatório gerado ainda.</p>'; return; }
+    if (!last) { el.innerHTML = '<p class="empty-state">Nenhum relatório gerado ainda. Toque em "Gerar relatório desta semana" abaixo.</p>'; return; }
     const fmt = (v, unit, digits = 1) => v === null || v === undefined ? '--' : `${v >= 0 ? '+' : ''}${v.toFixed(digits)}${unit}`;
+    const isPro = data.pro.active;
     el.innerHTML = `
-      <p class="muted">Período: ${last.periodStart} a ${last.periodEnd}</p>
-      <div class="card-grid" style="margin:10px 0">
-        <div class="dash-card"><div class="label">Peso</div><div class="value">${fmt(last.weightDiff, 'kg')}</div></div>
-        <div class="dash-card"><div class="label">Cintura</div><div class="value">${fmt(last.waistDiff, 'cm')}</div></div>
-        <div class="dash-card"><div class="label">Ombros</div><div class="value">${fmt(last.shouldersDiff, 'cm')}</div></div>
-        <div class="dash-card"><div class="label">Treinos</div><div class="value">${last.workoutsDone}/${last.totalWorkouts}</div></div>
-        <div class="dash-card"><div class="label">Corridas</div><div class="value">${last.runsDone}</div></div>
-        <div class="dash-card"><div class="label">Distância</div><div class="value">${last.runDistance.toFixed(1)}km</div></div>
-        <div class="dash-card"><div class="label">Carga</div><div class="value">${fmt(last.avgLoadChange, '%')}</div></div>
-        <div class="dash-card"><div class="label">Sono médio</div><div class="value">${last.avgSleep ? last.avgSleep.toFixed(1) + 'h' : '--'}</div></div>
+      <div id="weekly-report-printable">
+        <p class="muted">Período: ${last.periodStart} a ${last.periodEnd}</p>
+        <div class="card-grid" style="margin:10px 0">
+          <div class="dash-card"><div class="label">Peso</div><div class="value">${fmt(last.weightDiff, 'kg')}</div></div>
+          <div class="dash-card"><div class="label">Cintura</div><div class="value">${fmt(last.waistDiff, 'cm')}</div></div>
+          <div class="dash-card"><div class="label">Ombros</div><div class="value">${fmt(last.shouldersDiff, 'cm')}</div></div>
+          <div class="dash-card"><div class="label">Treinos</div><div class="value">${last.workoutsDone}/${last.totalWorkouts}</div></div>
+          <div class="dash-card"><div class="label">Corridas</div><div class="value">${last.runsDone}</div></div>
+          <div class="dash-card"><div class="label">Distância</div><div class="value">${last.runDistance.toFixed(1)}km</div></div>
+          <div class="dash-card"><div class="label">Carga</div><div class="value">${fmt(last.avgLoadChange, '%')}</div></div>
+          <div class="dash-card"><div class="label">Sono médio</div><div class="value">${last.avgSleep ? last.avgSleep.toFixed(1) + 'h' : '--'}</div></div>
+        </div>
+        <p><strong>Pontos positivos</strong></p>
+        <ul style="margin:4px 0 10px 18px;font-size:13px;color:var(--text-secondary)">${last.positives.map(p => `<li>${p}</li>`).join('') || '<li>--</li>'}</ul>
+        <p><strong>Pontos de atenção</strong></p>
+        <ul style="margin:4px 0 10px 18px;font-size:13px;color:var(--text-secondary)">${last.attention.map(p => `<li>${p}</li>`).join('') || '<li>--</li>'}</ul>
+        <p><strong>Sugestão para a próxima semana</strong></p>
+        <p class="muted">${last.suggestion}</p>
       </div>
-      <p><strong>Pontos positivos</strong></p>
-      <ul style="margin:4px 0 10px 18px;font-size:13px;color:var(--text-secondary)">${last.positives.map(p => `<li>${p}</li>`).join('') || '<li>--</li>'}</ul>
-      <p><strong>Pontos de atenção</strong></p>
-      <ul style="margin:4px 0 10px 18px;font-size:13px;color:var(--text-secondary)">${last.attention.map(p => `<li>${p}</li>`).join('') || '<li>--</li>'}</ul>
-      <p><strong>Sugestão para a próxima semana</strong></p>
-      <p class="muted">${last.suggestion}</p>
+      ${isPro
+        ? `<button class="btn-secondary mt-3" id="btn-export-report-pdf">Exportar como PDF</button>`
+        : `<button class="btn-ghost mt-3" id="btn-export-report-pdf-locked">Exportar como PDF 🔒 PRO</button>`
+      }
     `;
+    const exportBtn = document.getElementById('btn-export-report-pdf');
+    if (exportBtn) exportBtn.addEventListener('click', () => this.exportWeeklyReportPDF(last));
+    const lockedBtn = document.getElementById('btn-export-report-pdf-locked');
+    if (lockedBtn) lockedBtn.addEventListener('click', () => { this.toast('Exportar PDF é um recurso PRO.'); this.goTo('mais'); });
+  },
+
+  /* Exporta o relatório como PDF usando a caixa de diálogo de impressão
+     do próprio navegador (window.print → "Salvar como PDF"). Funciona
+     100% offline, sem biblioteca externa. */
+  exportWeeklyReportPDF(report) {
+    const printable = document.getElementById('weekly-report-printable');
+    const win = window.open('', '_blank');
+    win.document.write(`
+      <html><head><title>Relatório semanal V-SHAPE 90</title>
+      <style>
+        body { font-family: -apple-system, sans-serif; padding: 30px; color: #111; }
+        h1 { font-size: 20px; }
+        .card-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0; }
+        .dash-card { border: 1px solid #ccc; border-radius: 8px; padding: 10px; }
+        .label { font-size: 10px; text-transform: uppercase; color: #666; }
+        .value { font-size: 18px; font-weight: 700; }
+        ul { margin: 4px 0 12px 18px; font-size: 13px; }
+        .muted { color: #555; }
+      </style></head>
+      <body>
+        <h1>V-SHAPE 90 — Relatório Semanal</h1>
+        ${printable.innerHTML}
+      </body></html>
+    `);
+    win.document.close();
+    setTimeout(() => win.print(), 300);
   },
 
   /* ============================================================
@@ -1247,13 +1408,14 @@ const App = {
     document.getElementById('settings-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const data = Storage.load();
-      data.settings.waterGoalMl = Number(document.getElementById('set-water').value) || data.settings.waterGoalMl;
-      data.settings.calorieGoal = Number(document.getElementById('set-cal').value) || data.settings.calorieGoal;
-      data.settings.proteinGoal = Number(document.getElementById('set-prot').value) || data.settings.proteinGoal;
-      data.settings.carbGoal = Number(document.getElementById('set-carb').value) || data.settings.carbGoal;
-      data.settings.fatGoal = Number(document.getElementById('set-fat').value) || data.settings.fatGoal;
       data.settings.restTimerDefault = Number(document.getElementById('set-rest').value) || data.settings.restTimerDefault;
+      const reminderEnable = document.getElementById('set-reminder-enable').checked;
+      data.settings.reminderEnabled = reminderEnable;
+      data.settings.reminderTime = document.getElementById('set-reminder-time').value || data.settings.reminderTime;
       Storage.save();
+      if (reminderEnable && 'Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
       this.toast('Configurações salvas.');
       this.renderMais();
     });
@@ -1290,16 +1452,12 @@ const App = {
   },
 
   renderMais() {
-    this.renderWater();
-    this.renderNutrition();
     this.renderWeeklyGrid();
+    this.renderAccountPanel();
     const data = Storage.load();
-    document.getElementById('set-water').value = data.settings.waterGoalMl;
-    document.getElementById('set-cal').value = data.settings.calorieGoal;
-    document.getElementById('set-prot').value = data.settings.proteinGoal;
-    document.getElementById('set-carb').value = data.settings.carbGoal;
-    document.getElementById('set-fat').value = data.settings.fatGoal;
     document.getElementById('set-rest').value = data.settings.restTimerDefault;
+    document.getElementById('set-reminder-enable').checked = data.settings.reminderEnabled;
+    document.getElementById('set-reminder-time').value = data.settings.reminderTime;
   },
 
   renderWeeklyGrid() {
@@ -1335,11 +1493,11 @@ const App = {
     const wrap = document.createElement('div');
     wrap.className = 'workout-mode';
     wrap.innerHTML = `
-      <button class="icon-btn wm-close" id="dayswap-close">✕</button>
+      <button class="icon-btn wm-close" id="dayswap-close" aria-label="Fechar">✕</button>
       <div class="wm-inner" style="text-align:left; max-width:420px">
         <div class="wm-eyebrow">${labels[dayA]} — ${data.plan[dayA].name}</div>
         <h3 style="margin-bottom:2px; font-size:18px">Trocar com qual dia?</h3>
-        <p class="muted" style="margin-bottom:14px">O conteúdo (exercícios e CORE) dos dois dias será trocado entre si.</p>
+        <p class="muted mb-4">O conteúdo (exercícios e CORE) dos dois dias será trocado entre si.</p>
         <div class="swap-list">
           ${others.map(k => `
             <button class="swap-option swap-option-text" data-target="${k}">
@@ -1363,90 +1521,211 @@ const App = {
     });
   },
 
-  renderWater() {
-    const data = Storage.load();
-    const date = todayISO();
-    const current = data.waterLogs[date] || 0;
-    const goal = data.settings.waterGoalMl;
-    const pct = Math.min(100, (current / goal) * 100);
-    const el = document.getElementById('water-content');
-    el.innerHTML = `
-      <p>${current} / ${goal} mL</p>
-      <div class="progress-bar"><div class="fill" style="width:${pct}%"></div></div>
-      <div class="water-btns">
-        <button class="btn-secondary" data-add="250">+250 mL</button>
-        <button class="btn-secondary" data-add="500">+500 mL</button>
-        <button class="btn-ghost" id="btn-water-reset">Zerar</button>
-      </div>
-    `;
-    el.querySelectorAll('[data-add]').forEach(btn => {
+  /* ============================================================
+     ONBOARDING
+     ============================================================ */
+  ob: { step: 1, totalSteps: 6, objective: null, days: 6, reminderEnabled: false },
+
+  startOnboarding() {
+    this.ob = { step: 1, totalSteps: 6, objective: null, days: 6, reminderEnabled: false };
+    const screen = document.getElementById('onboarding-screen');
+    screen.classList.remove('hidden');
+
+    const objectivesEl = document.getElementById('ob-objectives');
+    objectivesEl.innerHTML = Object.entries(Onboarding.OBJECTIVES).map(([key, o]) => `
+      <button class="swap-option swap-option-text" data-objective="${key}" style="text-align:left; display:block">
+        <strong style="display:block">${o.label}</strong>
+        <span class="muted" style="font-weight:400; font-size:12px">${o.description}</span>
+      </button>
+    `).join('');
+    objectivesEl.querySelectorAll('[data-objective]').forEach(btn => {
       btn.addEventListener('click', () => {
-        data.waterLogs[date] = (data.waterLogs[date] || 0) + Number(btn.dataset.add);
-        Storage.save();
-        this.renderWater();
+        this.ob.objective = btn.dataset.objective;
+        objectivesEl.querySelectorAll('[data-objective]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('ob-obj-next').disabled = false;
       });
     });
-    document.getElementById('btn-water-reset').addEventListener('click', () => {
-      data.waterLogs[date] = 0;
-      Storage.save();
-      this.renderWater();
+
+    document.getElementById('ob-days').querySelectorAll('[data-days]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.ob.days = Number(btn.dataset.days);
+        document.getElementById('ob-days').querySelectorAll('[data-days]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
     });
+
+    document.getElementById('ob-reminder-enable').addEventListener('change', (e) => {
+      document.getElementById('ob-reminder-time-wrap').style.display = e.target.checked ? '' : 'none';
+    });
+
+    screen.querySelectorAll('[data-next]').forEach(btn => {
+      btn.addEventListener('click', () => this.obGoToStep(this.ob.step + 1));
+    });
+    screen.querySelectorAll('[data-back]').forEach(btn => {
+      btn.addEventListener('click', () => this.obGoToStep(this.ob.step - 1));
+    });
+    document.getElementById('ob-finish').addEventListener('click', () => this.finishOnboarding());
+
+    this.obGoToStep(1);
   },
 
-  renderNutrition() {
-    const data = Storage.load();
-    const date = todayISO();
-    if (!data.nutritionLogs[date]) data.nutritionLogs[date] = {};
-    const meals = [
-      ['breakfast', 'Café da manhã'], ['lunch', 'Almoço'], ['snack', 'Lanche'],
-      ['dinner', 'Jantar'], ['supper', 'Ceia']
-    ];
-    const totals = { cal: 0, prot: 0, carb: 0, fat: 0 };
-    meals.forEach(([key]) => {
-      const m = data.nutritionLogs[date][key];
-      if (m) { totals.cal += m.cal || 0; totals.prot += m.prot || 0; totals.carb += m.carb || 0; totals.fat += m.fat || 0; }
+  obGoToStep(step) {
+    // valida ao SAIR do passo 2 (dados físicos) pra frente — o bug original
+    // checava a condição errada e nunca disparava; corrigido aqui.
+    if (this.ob.step === 2 && step > 2) {
+      const h = document.getElementById('ob-height').value;
+      const w = document.getElementById('ob-weight').value;
+      if (!h || !w) { this.toast('Informe altura e peso pra continuar.'); return; }
+    }
+    this.ob.step = Math.max(1, Math.min(this.ob.totalSteps, step));
+    document.querySelectorAll('.ob-step').forEach(el => {
+      el.classList.toggle('hidden', Number(el.dataset.step) !== this.ob.step);
     });
-    const g = data.settings;
-    const el = document.getElementById('nutrition-content');
+    document.getElementById('ob-progress-fill').style.width = `${(this.ob.step / this.ob.totalSteps) * 100}%`;
+
+    if (this.ob.step === 6) this.renderOnboardingSummary();
+  },
+
+  renderOnboardingSummary() {
+    const height = Number(document.getElementById('ob-height').value) || 169;
+    const weight = Number(document.getElementById('ob-weight').value) || 76;
+    const objLabel = this.ob.objective ? Onboarding.OBJECTIVES[this.ob.objective].label : 'V-Shape + Força';
+    const reminderOn = document.getElementById('ob-reminder-enable').checked;
+    const reminderTime = document.getElementById('ob-reminder-time').value || '07:00';
+
+    document.getElementById('ob-summary').innerHTML = `
+      <p><strong>${height}cm · ${weight}kg</strong></p>
+      <p>Objetivo: <strong>${objLabel}</strong></p>
+      <p>Grade semanal: <strong>${this.ob.days} dias de treino/semana</strong></p>
+      <p>Lembrete diário: <strong>${reminderOn ? `ativado às ${reminderTime}` : 'desativado'}</strong></p>
+    `;
+  },
+
+  async finishOnboarding() {
+    const data = Storage.load();
+    // HIGH corrigido: sem limites, valores absurdos (altura negativa, peso
+    // 0, idade 999) quebravam silenciosamente a calculadora de nutrição
+    // (podia gerar meta calórica negativa). Agora tudo é limitado a uma
+    // faixa fisiologicamente plausível antes de ser salvo.
+    const height = clampNumber(Number(document.getElementById('ob-height').value) || 169, 100, 250);
+    const weight = clampNumber(Number(document.getElementById('ob-weight').value) || 76, 20, 300);
+    const age = clampNumber(Number(document.getElementById('ob-age').value) || 30, 10, 100);
+    const sex = document.getElementById('ob-sex').value;
+    const objective = this.ob.objective || 'vshape';
+    const days = this.ob.days;
+    const reminderOn = document.getElementById('ob-reminder-enable').checked;
+    const reminderTime = document.getElementById('ob-reminder-time').value || '07:00';
+
+    data.profile.heightCm = height;
+    data.profile.startWeightKg = weight;
+    data.profile.age = age;
+    data.profile.sex = sex;
+    data.profile.objective = objective;
+    data.profile.daysPerWeek = days;
+    data.meta.startDate = todayISO();
+    data.meta.onboardingComplete = true;
+
+    data.plan = Onboarding.buildWeeklyPlan(days);
+
+    data.settings.reminderEnabled = reminderOn;
+    data.settings.reminderTime = reminderTime;
+
+    // registra o peso inicial como primeiro ponto do gráfico de evolução
+    data.bodyLogs.push({ id: uid('body'), date: todayISO(), weight, waist: null, shoulders: null, chest: null, armR: null, armL: null, thigh: null });
+
+    Storage.save();
+
+    if (reminderOn && 'Notification' in window) {
+      try { await Notification.requestPermission(); } catch (e) { /* usuário pode negar, segue sem notificação */ }
+    }
+
+    document.getElementById('onboarding-screen').classList.add('hidden');
+    this.selectedDayTab = dayKeyFromDate();
+    this.renderAll();
+    this.toast('Plano criado! Bem-vindo ao V-SHAPE 90.');
+  },
+
+  /* ============================================================
+     LEMBRETE DIÁRIO (best-effort, sem servidor de push)
+     ============================================================ */
+  checkDailyReminder() {
+    const data = Storage.load();
+    if (!data.settings.reminderEnabled) return;
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+    const now = new Date();
+    const [h, m] = (data.settings.reminderTime || '07:00').split(':').map(Number);
+    const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+    const already = data.settings.lastReminderShownDate === todayISO();
+    const pastTime = now >= target;
+    const doneToday = !!Recovery.todayCheckIn();
+
+    if (pastTime && !already && !doneToday) {
+      this.fireReminderNotification();
+      data.settings.lastReminderShownDate = todayISO();
+      Storage.save();
+    }
+    // reagenda a checagem pra daqui 15 min, enquanto o app estiver aberto
+    setTimeout(() => this.checkDailyReminder(), 15 * 60 * 1000);
+  },
+
+  fireReminderNotification() {
+    const dayKey = dayKeyFromDate();
+    const plan = Workouts.planForDay(dayKey);
+    const body = plan.exercises.length ? `Hoje: ${plan.name}. Bora treinar?` : 'Dia de recuperação — que tal um check-in rápido?';
+    try {
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.ready.then(reg => reg.showNotification('V-SHAPE 90', { body, icon: 'assets/icon-192.png' }));
+      } else {
+        new Notification('V-SHAPE 90', { body, icon: 'assets/icon-192.png' });
+      }
+    } catch (e) { console.warn('Notificação falhou:', e); }
+  },
+
+  /* ============================================================
+     CONTA / PRO
+     Sem backend real conectado nesta versão. O toggle abaixo é
+     100% local — não é uma cobrança de verdade. Ver README para
+     onde a integração de pagamento/backend deve entrar.
+     ============================================================ */
+  renderAccountPanel() {
+    const data = Storage.load();
+    const el = document.getElementById('account-content');
+    const isPro = data.pro.active;
     el.innerHTML = `
-      <p>Calorias: ${totals.cal} / ${g.calorieGoal} kcal</p>
-      <div class="progress-bar"><div class="fill" style="width:${Math.min(100, totals.cal / g.calorieGoal * 100)}%"></div></div>
-      <p style="font-size:12px;color:var(--text-secondary)">Prot ${totals.prot}/${g.proteinGoal}g · Carb ${totals.carb}/${g.carbGoal}g · Gord ${totals.fat}/${g.fatGoal}g</p>
-      <div style="margin-top:10px">
-        ${meals.map(([key, label]) => {
-          const m = data.nutritionLogs[date][key] || {};
-          return `
-          <div class="meal-row">
-            <div>
-              <div class="meal-name">${label}</div>
-              <div class="meal-macro">${m.cal || 0}kcal · P${m.prot || 0} C${m.carb || 0} G${m.fat || 0}</div>
-            </div>
-            <button class="btn-secondary btn-sm" data-meal="${key}" data-label="${label}">Editar</button>
-          </div>`;
-        }).join('')}
+      ${isPro ? '<span class="pro-badge">PRO ativo (modo de teste)</span>' : '<span class="pro-badge" style="background:var(--surface-2); color:var(--text-tertiary)">Plano gratuito</span>'}
+      <div class="pro-feature-list">
+        ${this.proFeatureRow('Comparação de fotos sem limite de semanas', isPro)}
+        ${this.proFeatureRow('Exportar relatório semanal em PDF', isPro)}
+        ${this.proFeatureRow('Sync entre dispositivos', false, true)}
+      </div>
+      ${isPro
+        ? `<button class="btn-ghost" id="btn-pro-toggle">Desativar modo de teste PRO</button>`
+        : `<button class="btn-primary" id="btn-pro-toggle">Ativar modo de teste PRO (sem cobrança real)</button>`
+      }
+      <div class="pro-lock-note">
+        Esta versão não tem backend nem processador de pagamento conectado. O botão acima só liga uma flag local (<code>pro.active</code>) pra você testar a experiência PRO. Uma assinatura real exigiria: conta de usuário autenticada, integração de pagamento (ex.: Stripe/Pix) e um backend pra validar o status — nenhum dos três existe nesta versão.
       </div>
     `;
-    el.querySelectorAll('[data-meal]').forEach(btn => {
-      btn.addEventListener('click', () => this.editMeal(date, btn.dataset.meal, btn.dataset.label));
+    document.getElementById('btn-pro-toggle').addEventListener('click', () => {
+      data.pro.active = !data.pro.active;
+      data.pro.activatedAt = data.pro.active ? new Date().toISOString() : null;
+      data.pro.mode = data.pro.active ? 'demo' : null;
+      Storage.save();
+      this.toast(data.pro.active ? 'Modo de teste PRO ativado.' : 'Modo de teste PRO desativado.');
+      this.renderAccountPanel();
+      this.renderEvolucao();
     });
   },
 
-  editMeal(date, key, label) {
-    const data = Storage.load();
-    const m = data.nutritionLogs[date][key] || { cal: 0, prot: 0, carb: 0, fat: 0 };
-    const cal = prompt(`${label} — Calorias (kcal):`, m.cal || 0);
-    if (cal === null) return;
-    const prot = prompt(`${label} — Proteína (g):`, m.prot || 0);
-    if (prot === null) return;
-    const carb = prompt(`${label} — Carboidrato (g):`, m.carb || 0);
-    if (carb === null) return;
-    const fat = prompt(`${label} — Gordura (g):`, m.fat || 0);
-    if (fat === null) return;
-    data.nutritionLogs[date][key] = {
-      cal: Number(cal) || 0, prot: Number(prot) || 0, carb: Number(carb) || 0, fat: Number(fat) || 0
-    };
-    Storage.save();
-    this.renderNutrition();
+  proFeatureRow(label, unlocked, alwaysLocked) {
+    const icon = alwaysLocked
+      ? '<svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="12" height="8" rx="1.5"/><path d="M7.5 10V7a3.5 3.5 0 0 1 7 0v3"/></svg>'
+      : unlocked
+        ? '<svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 9 16l9-10.5"/></svg>'
+        : '<svg viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="12" height="8" rx="1.5"/><path d="M7.5 10V7a3.5 3.5 0 0 1 7 0v3"/></svg>';
+    return `<div class="pro-feature-row">${icon}<span>${label}${alwaysLocked ? ' <span class="muted">(requer backend — ver nota abaixo)</span>' : ''}</span></div>`;
   },
 
   registerServiceWorker() {
@@ -1459,6 +1738,11 @@ const App = {
 };
 
 /* ---------------- Utilidades globais ---------------- */
+
+function clampNumber(value, min, max) {
+  if (Number.isNaN(value)) return min;
+  return Math.min(max, Math.max(min, value));
+}
 
 function fileToDataURL(file, maxDim = 1000) {
   return new Promise((resolve, reject) => {

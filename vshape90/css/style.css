@@ -44,9 +44,31 @@
   --radius-sm: 10px;
   --nav-h: 66px;
   --header-h: 60px;
-  --shadow-1: 0 1px 2px rgba(0,0,0,0.35);
-  --shadow-2: 0 10px 26px rgba(0,0,0,0.45);
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Sombra funcional única — só usada onde algo precisa ler como
+     "flutuando acima" da tela (toast, overlays), nunca decoração. */
+  --shadow-overlay: 0 8px 20px rgba(0,0,0,0.4);
+
+  /* Escala tipográfica (8 degraus, sem valores fracionados) */
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-base: 14px;
+  --text-md: 15px;
+  --text-lg: 17px;
+  --text-xl: 20px;
+  --text-2xl: 26px;
+  --text-hero: 40px;
+
+  /* Escala de espaçamento (múltiplos de 4) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 48px;
 }
 
 * { box-sizing: border-box; }
@@ -63,38 +85,43 @@ html, body {
 
 body {
   padding-top: var(--header-h);
-  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 8px);
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + var(--space-2));
   min-height: 100vh;
-  background-image: radial-gradient(620px 300px at 50% -12%, rgba(198,250,62,0.06), transparent 60%);
-  background-repeat: no-repeat;
 }
 
-/* Headlines em caixa-alta, peso forte, tracking levemente negativo —
-   aproxima o efeito "condensado" do print de referência usando fontes
-   do sistema (mantém o app 100% offline, sem depender de CDN de fontes). */
+/* Hierarquia por peso e tracking (não por família de fonte — uma fonte
+   condensada de sistema como 'Arial Narrow' só existe em parte dos
+   dispositivos, então renderiza diferente em cada aparelho). */
 h1, h2, h3, h4 {
-  margin: 0 0 10px;
+  margin: 0 0 var(--space-2);
   font-weight: 800;
   letter-spacing: -0.01em;
-  font-family: 'Arial Narrow', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 h3 {
-  font-size: 15px;
+  font-size: var(--text-xs);
   text-transform: uppercase;
   color: var(--text);
   font-weight: 800;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.04em;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
 }
-h3 .icon { width: 15px; height: 15px; color: var(--accent); flex: none; }
-p { margin: 0 0 8px; line-height: 1.45; }
-.muted { color: var(--text-secondary); font-size: 13px; }
+h3 .icon { width: 14px; height: 14px; color: var(--accent); flex: none; }
+p { margin: 0 0 var(--space-2); line-height: 1.5; }
+.muted { color: var(--text-secondary); font-size: var(--text-sm); }
 ::selection { background: var(--accent-soft); color: var(--text); }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 button { font-family: inherit; cursor: pointer; }
 svg { display: block; }
+
+/* Utilitários de espaçamento (evita valores soltos em style="" inline) */
+.mt-1 { margin-top: var(--space-1); } .mt-2 { margin-top: var(--space-2); }
+.mt-3 { margin-top: var(--space-3); } .mt-4 { margin-top: var(--space-4); }
+.mt-5 { margin-top: var(--space-5); } .mt-6 { margin-top: var(--space-6); }
+.mb-1 { margin-bottom: var(--space-1); } .mb-2 { margin-bottom: var(--space-2); }
+.mb-3 { margin-bottom: var(--space-3); } .mb-4 { margin-bottom: var(--space-4); }
+.mb-5 { margin-bottom: var(--space-5); } .mb-6 { margin-bottom: var(--space-6); }
 
 /* ---------- Header ---------- */
 .app-header {
@@ -120,12 +147,11 @@ svg { display: block; }
   color: var(--accent-ink);
   padding-top: 5px;
   flex: none;
-  box-shadow: 0 2px 12px rgba(198,250,62,0.3);
 }
 .brand-text { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
 .brand-text strong {
   font-size: 14px; letter-spacing: 0.02em; color: var(--text);
-  font-family: 'Arial Narrow', sans-serif; font-weight: 800; text-transform: uppercase;
+  font-weight: 800; text-transform: uppercase;
 }
 .brand-day-row { display: flex; align-items: center; gap: 8px; }
 .brand-day-row span { font-size: 10.5px; color: var(--accent); font-weight: 800; letter-spacing: 0.04em; white-space: nowrap; }
@@ -136,7 +162,7 @@ svg { display: block; }
   background: var(--surface-2);
   border: 1px solid var(--border);
   color: var(--text-secondary);
-  width: 36px; height: 36px;
+  width: 40px; height: 40px;
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
   flex: none;
@@ -157,8 +183,22 @@ main#app { padding: 16px; max-width: 640px; margin: 0 auto; }
   border-radius: var(--radius-lg);
   padding: 18px;
   margin-bottom: 12px;
-  box-shadow: var(--shadow-1);
 }
+
+/* ---------- Hero (resultado principal — sem borda de card, hierarquia
+   só por tipografia, pra não competir visualmente com os stat cards) ---------- */
+.hero-band { margin-bottom: var(--space-5); }
+.hero-band .hero-label {
+  font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--text-tertiary); font-weight: 700; margin-bottom: var(--space-1);
+}
+.hero-band .hero-value {
+  font-size: var(--text-hero); font-weight: 800; letter-spacing: -0.02em;
+  line-height: 1; font-variant-numeric: tabular-nums; color: var(--text);
+}
+.hero-band .hero-value .hero-unit { font-size: var(--text-lg); color: var(--text-secondary); font-weight: 700; margin-left: var(--space-1); }
+.hero-band .hero-sub { font-size: var(--text-sm); color: var(--text-secondary); margin-top: var(--space-2); }
+.hero-band .hero-sub strong { color: var(--accent); font-weight: 700; }
 
 /* ---------- Dashboard cards ---------- */
 .card-grid {
@@ -174,7 +214,6 @@ main#app { padding: 16px; max-width: 640px; margin: 0 auto; }
   padding: 13px 14px 14px;
   position: relative;
   overflow: hidden;
-  box-shadow: var(--shadow-1);
 }
 .dash-card::before {
   content: '';
@@ -190,34 +229,6 @@ main#app { padding: 16px; max-width: 640px; margin: 0 auto; }
 .dash-card .value.green { color: var(--positive); }
 .dash-card .value.yellow { color: var(--warning); }
 .dash-card .value.red { color: var(--danger); }
-
-/* ---------- Taper bar (elemento de assinatura visual) ---------- */
-.taper-track {
-  height: 8px;
-  background: var(--surface-2);
-  border-radius: 6px;
-  overflow: hidden;
-  position: relative;
-}
-.taper-fill {
-  height: 100%;
-  border-radius: 6px;
-  background: var(--accent);
-  transition: width 0.4s var(--ease);
-}
-
-.taper-divider {
-  display: flex; align-items: center; gap: 10px;
-  margin: 2px 0 14px;
-}
-.taper-divider::before {
-  content: '';
-  width: 10px; height: 10px;
-  background: linear-gradient(155deg, var(--accent), var(--accent-deep));
-  clip-path: polygon(50% 100%, 4% 0%, 96% 0%);
-  flex: none;
-}
-.taper-divider .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-tertiary); font-weight: 700; }
 
 /* ---------- Buttons ---------- */
 .btn-primary, .btn-secondary, .btn-ghost, .btn-danger {
@@ -309,7 +320,6 @@ textarea { resize: vertical; }
   border-radius: var(--radius-lg);
   padding: 15px;
   margin-bottom: 10px;
-  box-shadow: var(--shadow-1);
 }
 .exercise-card .ex-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .exercise-card .ex-head-row { display: flex; align-items: flex-start; gap: 12px; }
@@ -341,7 +351,7 @@ textarea { resize: vertical; }
 .ex-external-link svg { width: 13px; height: 13px; flex: none; }
 
 /* Botão de trocar exercício (dentro do card) */
-.ex-swap-btn { width: 30px; height: 30px; border-radius: 8px; }
+.ex-swap-btn { width: 36px; height: 36px; border-radius: 9px; }
 .ex-swap-btn svg { width: 15px; height: 15px; }
 
 /* Lista de alternativas no seletor de troca de exercício */
@@ -363,8 +373,8 @@ textarea { resize: vertical; }
   align-items: center;
 }
 .ex-history-row-editable { grid-template-columns: 1fr 1fr 1fr auto; }
-.ex-history-row .ex-edit-log-btn { width: 26px; height: 26px; }
-.ex-history-row .ex-edit-log-btn svg { width: 13px; height: 13px; }
+.ex-history-row .ex-edit-log-btn { width: 34px; height: 34px; }
+.ex-history-row .ex-edit-log-btn svg { width: 14px; height: 14px; }
 .ex-history-row:first-child { color: var(--text-tertiary); font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: 0.05em; }
 .ex-history-row:last-child { border-bottom: none; }
 .ex-history-row span:nth-child(2) { text-align: center; }
@@ -404,7 +414,6 @@ textarea { resize: vertical; }
 .wm-eyebrow { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent); font-weight: 800; margin-bottom: 8px; }
 .wm-exname {
   font-size: 24px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 8px; text-transform: uppercase;
-  font-family: 'Arial Narrow', sans-serif;
 }
 .wm-series { color: var(--text); font-weight: 700; margin-bottom: 4px; font-size: 13.5px; }
 .wm-prev { color: var(--text-tertiary); font-size: 13px; margin-bottom: 26px; font-variant-numeric: tabular-nums; }
@@ -488,8 +497,11 @@ textarea { resize: vertical; }
 .exercise-demo { flex: none; color: var(--accent); }
 .exercise-demo-sm { width: 46px; height: 64px; }
 .exercise-demo-lg { width: 92px; height: 128px; margin: 0 auto 10px; }
+.exercise-demo-xl { width: 140px; height: 196px; margin: 0 auto 12px; }
 .exercise-demo-svg { width: 100%; height: 100%; overflow: visible; }
 .exercise-demo-svg .rig-head { color: var(--text); }
+.ex-thumb-btn { background: none; border: none; padding: 0; flex: none; cursor: pointer; }
+.ex-thumb-btn:active .exercise-demo { opacity: 0.7; }
 
 /* Origem de rotação de cada segmento do boneco, usando as coordenadas
    reais do viewBox (ombro, cotovelo, quadril, joelho) — é isso que faz
@@ -616,16 +628,6 @@ textarea { resize: vertical; }
 }
 .pr-item .pr-value { color: var(--accent); font-weight: 800; font-variant-numeric: tabular-nums; }
 
-/* ---------- Nutrition / water ---------- */
-.meal-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 13.5px; }
-.meal-row:last-child { border-bottom: none; }
-.meal-row .meal-name { font-weight: 700; }
-.meal-row .meal-macro { color: var(--text-tertiary); font-size: 11.5px; margin-top: 2px; font-variant-numeric: tabular-nums; }
-.progress-bar { height: 8px; background: var(--surface-2); border-radius: 6px; overflow: hidden; margin: 8px 0 12px; }
-.progress-bar .fill { height: 100%; background: var(--accent); border-radius: 6px; transition: width 0.3s var(--ease); }
-.water-btns { display: flex; gap: 8px; margin-top: 12px; }
-.water-btns button { flex: 1; }
-
 /* ---------- Backup ---------- */
 .backup-row { display: flex; gap: 10px; }
 .file-label { text-align: center; cursor: pointer; }
@@ -642,7 +644,7 @@ textarea { resize: vertical; }
   font-size: 13px;
   font-weight: 600;
   z-index: 300;
-  box-shadow: var(--shadow-2);
+  box-shadow: var(--shadow-overlay);
   transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
 }
 .toast.hidden { display: none; }
@@ -688,8 +690,75 @@ textarea { resize: vertical; }
   .panel { padding: 22px; }
 }
 
-/* Empty states */
+/* ---------- Onboarding ---------- */
+.onboarding-progress { height: 4px; background: var(--surface-2); border-radius: 3px; overflow: hidden; margin-bottom: 24px; }
+.onboarding-progress-fill { height: 100%; background: var(--accent); transition: width 0.3s var(--ease); }
+.ob-step.hidden { display: none; }
+.evo-tab-panel.hidden { display: none; }
+
+/* ---------- Escala de RIR no Modo Treino ---------- */
+.rir-scale { display: flex; gap: 6px; margin-top: 7px; }
+.rir-scale button {
+  flex: 1; background: var(--surface-2); border: 1px solid var(--border); color: var(--text-secondary);
+  padding: 9px 0; border-radius: 9px; font-weight: 700; font-size: 13px;
+}
+.rir-scale button.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+/* ---------- Conta / PRO ---------- */
+.pro-badge {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px;
+  background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.pro-feature-list { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+.pro-feature-row { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text-secondary); }
+.pro-feature-row svg { width: 16px; height: 16px; color: var(--accent); flex: none; }
+.pro-lock-note {
+  font-size: 12px; color: var(--text-tertiary); background: var(--surface-2); border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm); padding: 10px 12px; margin-top: 10px;
+}
 .empty-state { color: var(--text-tertiary); font-size: 13px; text-align: center; padding: 20px 8px; }
+
+/* ============================================================
+   Destaque muscular sobre o boneco-palito (vermelho/laranja/amarelo)
+   — versão esquemática do sistema de cores pedido, aplicada por
+   segmento do corpo (não por músculo anatômico individual, já que o
+   boneco é 2D). O nome do músculo certo aparece em texto na tela de
+   detalhes; a cor é uma aproximação didática, declarada como tal.
+   ============================================================ */
+.muscle-primary { color: #E85B5F; animation: musclePulsePrimary 1.8s ease-in-out infinite; }
+.muscle-secondary { color: #F0954B; }
+.muscle-stabilizer { color: #F0D23E; }
+.muscle-neutral { color: var(--accent); opacity: 0.55; }
+@keyframes musclePulsePrimary {
+  0%, 100% { filter: brightness(0.85); }
+  50% { filter: brightness(1.25); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .muscle-primary { animation: none; }
+}
+
+/* Legenda de cores na tela de detalhes */
+.muscle-legend { display: flex; gap: var(--space-4); flex-wrap: wrap; margin: var(--space-2) 0 var(--space-4); }
+.muscle-legend-item { display: flex; align-items: center; gap: 6px; font-size: var(--text-xs); color: var(--text-secondary); }
+.muscle-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+
+/* Blocos de texto da tela de detalhes do exercício */
+.exercise-detail-section { margin-bottom: var(--space-4); }
+.exercise-detail-section h4 {
+  font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-tertiary); font-weight: 700; margin-bottom: var(--space-1);
+}
+.exercise-detail-section p { font-size: var(--text-base); color: var(--text-secondary); margin: 0; line-height: 1.55; }
+.exercise-detail-section ul { margin: var(--space-1) 0 0 18px; padding: 0; font-size: var(--text-base); color: var(--text-secondary); }
+.exercise-detail-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: var(--space-4); }
+.exercise-detail-tag {
+  font-size: var(--text-xs); font-weight: 700; padding: 4px 10px; border-radius: 20px;
+  background: var(--surface-2); color: var(--text-secondary); border: 1px solid var(--border);
+}
+.breathing-row { display: flex; gap: var(--space-4); margin-bottom: var(--space-4); }
+.breathing-item { flex: 1; background: var(--surface-2); border-radius: var(--radius-sm); padding: var(--space-3); }
+.breathing-item .label { font-size: var(--text-xs); text-transform: uppercase; color: var(--text-tertiary); font-weight: 700; }
+.breathing-item .value { font-size: var(--text-sm); color: var(--text); margin-top: 4px; }
 
 /* Movimento reduzido */
 @media (prefers-reduced-motion: reduce) {

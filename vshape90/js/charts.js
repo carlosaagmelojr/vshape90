@@ -98,17 +98,6 @@ const Charts = {
     ctx.fillText(points[0].label, padL, cssH - 6);
     ctx.textAlign = 'right';
     ctx.fillText(points[points.length - 1].label, padL + w, cssH - 6);
-  },
-
-  /* Barra de progresso simples estilo "taper" (V-shape) */
-  taperBar(container, pct, opts = {}) {
-    if (!container) return;
-    const clamped = Math.max(0, Math.min(100, pct));
-    container.innerHTML = `
-      <div class="taper-track">
-        <div class="taper-fill" style="width:${clamped}%; background:${opts.color || 'var(--accent)'}"></div>
-      </div>
-    `;
   }
 };
 

@@ -3,14 +3,18 @@
    Cache do app shell para funcionamento 100% offline após 1º acesso
    ============================================================ */
 
-const CACHE_NAME = 'vshape90-cache-v1';
+const CACHE_NAME = 'vshape90-cache-v3';
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.json',
   './css/style.css',
   './js/storage.js',
+  './js/onboarding.js',
   './js/charts.js',
+  './js/exercise-demos.js',
+  './js/exercise-metadata.js',
+  './js/exercise-catalog.js',
   './js/workouts.js',
   './js/running.js',
   './js/recovery.js',
