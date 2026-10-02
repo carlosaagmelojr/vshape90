@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B120C">
+<title>V-SHAPE</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <span class="mark">V</span>
+    <div>
+      <strong>V-SHAPE</strong>
+      <small id="topDia">dia — / —</small>
+    </div>
+  </div>
+  <div class="bar"><i id="topBar"></i></div>
+</header>
+
+<main id="app">
+
+  <!-- ───────────────────────── HOJE ───────────────────────── -->
+  <section class="view" id="view-hoje">
+    <p class="eyebrow" id="hojeData">—</p>
+
+    <div class="vindex">
+      <div class="vindex-num" id="vIndice">—</div>
+      <div class="vindex-lbl">Índice V <span>ombros ÷ cintura</span></div>
+      <p class="muted sm" id="vIndiceHint">Registre ombro e cintura em Evolução.</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><span>Peso</span><b id="stPeso">—</b><small id="stPesoSub">sem registro</small></div>
+      <div class="stat"><span>Treinos (7d)</span><b id="stTreinos">0</b><small>sessões</small></div>
+      <div class="stat"><span>Corrida (7d)</span><b id="stKm">0,0</b><small>km</small></div>
+      <div class="stat"><span>Semana</span><b id="stSemana">1</b><small id="stFase">base</small></div>
+    </div>
+
+    <div class="card hero">
+      <p class="eyebrow">Treino de hoje</p>
+      <h2 id="hojeTreino">—</h2>
+      <p class="muted sm" id="hojeNota"></p>
+      <button class="btn primary big" id="btnIniciar">Iniciar treino</button>
+    </div>
+
+    <div class="card" id="cardCorrida">
+      <p class="eyebrow">Corrida</p>
+      <h3 id="corridaTitulo">Registrar corrida</h3>
+      <button class="btn ghost" data-go="corrida">Registrar</button>
+    </div>
+
+    <div class="card">
+      <p class="eyebrow">Check-in de recuperação</p>
+      <div class="chips" id="checkinChips">
+        <button class="chip" data-ci="otimo">Ótimo</button>
+        <button class="chip" data-ci="ok">Ok</button>
+        <button class="chip" data-ci="cansado">Cansado</button>
+        <button class="chip" data-ci="dor">Com dor</button>
+      </div>
+      <p class="muted sm" id="checkinMsg">Como você acordou hoje?</p>
+    </div>
+  </section>
+
+  <!-- ───────────────────────── TREINO ───────────────────────── -->
+  <section class="view" id="view-treino">
+    <p class="eyebrow" id="trEyebrow">Treino</p>
+    <h2 id="trNome">—</h2>
+    <p class="muted sm" id="trNota"></p>
+
+    <div id="trLista"></div>
+
+    <button class="btn ghost" id="btnConcluir">Concluir treino</button>
+  </section>
+
+  <!-- ───────────────────────── CORRIDA ───────────────────────── -->
+  <section class="view" id="view-corrida">
+    <p class="eyebrow">Corrida</p>
+    <h2>Registrar</h2>
+
+    <div class="card">
+      <div class="row2">
+        <label>Distância (km)<input type="number" id="inKm" inputmode="decimal" step="0.1" placeholder="5,0"></label>
+        <label>Tempo (min)<input type="number" id="inMin" inputmode="numeric" step="1" placeholder="30"></label>
+      </div>
+      <p class="muted sm" id="paceCalc">—</p>
+      <button class="btn primary" id="btnSalvarCorrida">Salvar corrida</button>
+    </div>
+
+    <h3 class="sechead">Histórico</h3>
+    <div id="listaCorridas" class="list"></div>
+  </section>
+
+  <!-- ───────────────────────── EVOLUÇÃO ───────────────────────── -->
+  <section class="view" id="view-evolucao">
+    <p class="eyebrow">Evolução</p>
+    <h2>Medidas</h2>
+
+    <div class="card">
+      <div class="row3">
+        <label>Peso (kg)<input type="number" id="inPeso" inputmode="decimal" step="0.1" placeholder="76,0"></label>
+        <label>Cintura (cm)<input type="number" id="inCintura" inputmode="decimal" step="0.5" placeholder="92"></label>
+        <label>Ombro (cm)<input type="number" id="inOmbro" inputmode="decimal" step="0.5" placeholder="118"></label>
+      </div>
+      <p class="muted sm">Cintura na altura do umbigo, em jejum. Ombro na parte mais larga.</p>
+      <button class="btn primary" id="btnSalvarMedida">Salvar medidas</button>
+    </div>
+
+    <h3 class="sechead">Índice V</h3>
+    <div class="card chartcard">
+      <div id="chart"></div>
+      <p class="muted sm" id="chartMsg">Registre pelo menos duas medições para ver a curva.</p>
+    </div>
+
+    <h3 class="sechead">Histórico</h3>
+    <div id="listaMedidas" class="list"></div>
+  </section>
+
+  <!-- ───────────────────────── MAIS ───────────────────────── -->
+  <section class="view" id="view-mais">
+    <p class="eyebrow">Mais</p>
+    <h2>Programa</h2>
+
+    <div class="card">
+      <div class="chips" id="progChips"></div>
+      <p class="muted sm" id="progResumo"></p>
+    </div>
+
+    <h3 class="sechead">Cadência</h3>
+    <div class="card">
+      <p class="sm" id="cadNotacao"></p>
+      <ul class="rules" id="cadRegras"></ul>
+      <p class="muted sm" id="cadResp"></p>
+    </div>
+
+    <h3 class="sechead">Dados</h3>
+    <div class="card">
+      <button class="btn ghost" id="btnExportar">Exportar meus dados</button>
+      <label class="btn ghost filelbl">Importar backup<input type="file" id="inImportar" accept="application/json" hidden></label>
+      <button class="btn danger" id="btnZerar">Apagar tudo e recomeçar</button>
+      <p class="muted sm">Tudo fica neste aparelho. Exporte de vez em quando.</p>
+    </div>
+
+    <p class="muted sm center" id="verInfo"></p>
+  </section>
+</main>
+
+<!-- ───────────────────────── CADÊNCIA (overlay) ───────────────────────── -->
+<div class="overlay" id="ovCad" hidden>
+  <div class="cad">
+    <button class="x" id="cadFechar" aria-label="Fechar">✕</button>
+    <p class="eyebrow" id="cadEx">—</p>
+    <div class="cadring">
+      <svg viewBox="0 0 120 120" aria-hidden="true">
+        <circle class="trk" cx="60" cy="60" r="52"></circle>
+        <circle class="prg" cx="60" cy="60" r="52" id="cadArc"></circle>
+      </svg>
+      <div class="cadmid">
+        <div class="cadfase" id="cadFase">Pronto</div>
+        <div class="cadseg" id="cadSeg">—</div>
+      </div>
+    </div>
+    <div class="cadreps"><span id="cadReps">0</span> <small>/ <span id="cadAlvo">—</span> reps</small></div>
+    <p class="muted sm" id="cadPadrao">—</p>
+    <div class="cadbtns">
+      <button class="btn primary big" id="cadPlay">Começar</button>
+      <button class="btn ghost" id="cadSom">Som: ligado</button>
+    </div>
+  </div>
+</div>
+
+<!-- ───────────────────────── DESCANSO (barra) ───────────────────────── -->
+<div class="rest" id="restBar" hidden>
+  <div class="restfill" id="restFill"></div>
+  <div class="restrow">
+    <span id="restTxt">Descanso</span>
+    <div>
+      <button class="mini" id="restMais">+15s</button>
+      <button class="mini" id="restPular">Pular</button>
+    </div>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="tab on" data-go="hoje"><i>⌂</i><span>Hoje</span></button>
+  <button class="tab" data-go="treino"><i>⚊</i><span>Treino</span></button>
+  <button class="tab" data-go="corrida"><i>◷</i><span>Corrida</span></button>
+  <button class="tab" data-go="evolucao"><i>▥</i><span>Evolução</span></button>
+  <button class="tab" data-go="mais"><i>≡</i><span>Mais</span></button>
+</nav>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="treinos.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
