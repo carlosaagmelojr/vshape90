@@ -25,6 +25,7 @@
       programa: 'ficha-v',
       som: true,
       fichas: {},    // fichas criadas por mim: id -> programa (mesmo formato dos prontos)
+      trocas: {},    // "YYYY-MM-DD": chave do treino escolhido à mão, ou 'descanso'
       logs: {},      // "YYYY-MM-DD": { treino, exercicios:{nome:[{carga,reps}]}, feito }
       corridas: [],  // { data, km, min }
       medidas: [],   // { data, peso, cintura, ombro }
@@ -93,16 +94,41 @@
     return Math.max(1, Math.min(programa().duracao_dias, diasEntre(S.inicio, hojeISO()) + 1));
   }
 
-  /* treino previsto para uma data */
+  /* um treino da ficha, pela sua chave (dia da semana "0".."6", ou letra "A".."D") */
+  function blocoPorChave(p, k) {
+    if (k === null || k === undefined || k === 'descanso') return null;
+    if (p.tipo === 'semanal') return p.semana[k] || null;
+    return (p.treinos && p.treinos[k]) || null;
+  }
+
+  /* o que estava previsto, sem contar trocas manuais */
+  function chavePadrao(p, iso) {
+    if (p.tipo === 'semanal') return String(new Date(iso + 'T00:00:00').getDay());
+    // rotativo: avança pelos treinos CONCLUÍDOS, não pelo calendário.
+    // Assim pular um dia não embaralha a sequência.
+    var feitos = 0;
+    for (var d in S.logs) if (d < iso && S.logs[d].feito) feitos++;
+    return p.sequencia[feitos % p.sequencia.length];
+  }
+
+  /* o que vale para a data: troca manual > o que já foi registrado > previsto */
+  function chaveDe(p, iso) {
+    if (S.trocas[iso] !== undefined) return S.trocas[iso];
+    var log = S.logs[iso];
+    if (log && log.chave !== undefined && blocoPorChave(p, log.chave)) return log.chave;
+    return chavePadrao(p, iso);
+  }
+
+  function trocado(iso) { return S.trocas[iso] !== undefined; }
+
+  /* treino de uma data — null quando é descanso */
   function treinoDe(iso) {
     var p = programa();
-    if (p.tipo === 'semanal') {
-      var wd = new Date(iso + 'T00:00:00').getDay();
-      return p.semana[wd] || null;
-    }
-    // rotativo: avança só nos dias já treinados + hoje
-    var i = Math.max(0, diasEntre(S.inicio, iso)) % p.sequencia.length;
-    return p.treinos[p.sequencia[i]] || null;
+    var t = blocoPorChave(p, chaveDe(p, iso));
+    if (!t) return null;
+    // dia sem exercício nenhum conta como descanso (a não ser que seja dia de corrida)
+    if (!t.corrida && (!t.exercicios || !t.exercicios.length)) return null;
+    return t;
   }
 
   function slug(s) {
@@ -207,13 +233,16 @@
     // treino de hoje
     var tr = treinoDe(iso);
     var log = S.logs[iso];
+    var pulado = S.trocas[iso] === 'descanso';
     if (!tr) {
-      $('#hojeTreino').textContent = 'Descanso';
-      $('#hojeNota').textContent = '';
+      $('#hojeTreino').textContent = pulado ? 'Dia pulado' : 'Descanso';
+      $('#hojeNota').textContent = pulado
+        ? 'Você marcou hoje como descanso. Dá para escolher outro treino abaixo.'
+        : 'Nada previsto para hoje nesta ficha.';
       $('#btnIniciar').hidden = true;
     } else {
       $('#hojeTreino').textContent = tr.nome;
-      $('#hojeNota').textContent = tr.nota || '';
+      $('#hojeNota').textContent = (trocado(iso) ? 'Trocado por você. ' : '') + (tr.nota || '');
       $('#btnIniciar').hidden = false;
       $('#btnIniciar').textContent = (log && log.feito) ? 'Treino concluído ✓ — rever'
         : (log && Object.keys(log.exercicios).length) ? 'Continuar treino' : 'Iniciar treino';
@@ -268,21 +297,22 @@
     }
     var box = $('#trLista');
     if (!trData) {
-      $('#trNome').textContent = 'Descanso';
-      $('#trEyebrow').textContent = '—';
-      $('#trNota').textContent = 'Nada marcado para hoje.';
+      $('#trNome').textContent = S.trocas[iso] === 'descanso' ? 'Dia pulado' : 'Descanso';
+      $('#trEyebrow').textContent = programa().nome;
+      $('#trNota').textContent = 'Use "Trocar treino" para escolher outro.';
       box.innerHTML = '';
       $('#btnConcluir').hidden = true;
       return;
     }
     var t = trData.treino;
-    $('#trEyebrow').textContent = programa().nome;
+    $('#trEyebrow').textContent = programa().nome + (trocado(iso) ? ' · trocado' : '');
     $('#trNome').textContent = t.nome;
     $('#trNota').textContent = t.nota || '';
     $('#btnConcluir').hidden = false;
 
     var log = logDe(iso);
     log.treino = t.id;
+    log.chave = chaveDe(programa(), iso);
 
     if (!t.exercicios.length) {
       box.innerHTML = '<p class="empty">Dia de corrida — registre na aba Corrida.</p>';
@@ -408,10 +438,69 @@
 
   /* onde fica, dentro da ficha, o treino de hoje */
   function chaveDoTreinoDeHoje(p) {
-    if (p.tipo === 'semanal') return String(new Date(hojeISO() + 'T00:00:00').getDay());
-    var i = Math.max(0, diasEntre(S.inicio, hojeISO())) % p.sequencia.length;
-    return p.sequencia[i];
+    var k = chaveDe(p, hojeISO());
+    return (k === 'descanso' || !blocoPorChave(p, k)) ? chavePadrao(p, hojeISO()) : k;
   }
+
+  /* ───────────── trocar / pular treino ───────────── */
+
+  function abrirPicker() {
+    var p = programa(), iso = hojeISO();
+    var atualK = chaveDe(p, iso);
+    var box = $('#pkLista');
+    box.innerHTML = '';
+
+    blocos(p).forEach(function (b) {
+      var t = b.treino;
+      var n = (t && t.exercicios) ? t.exercicios.length : 0;
+      var ehCorrida = t && t.corrida;
+      if (!n && !ehCorrida) return;                      // dia vazio não entra na lista
+      var el = document.createElement('div');
+      el.className = 'item clic' + (b.chave === atualK ? ' sel' : '');
+      el.innerHTML = '<div style="flex:1;min-width:0"><b></b><small>' + b.rotulo + ' · ' +
+        (ehCorrida ? 'corrida' : n + (n === 1 ? ' exercício' : ' exercícios')) + '</small></div>' +
+        (b.chave === atualK ? '<span class="muted">hoje</span>' : '');
+      el.querySelector('b').textContent = (t && t.nome) || b.rotulo;
+      el.addEventListener('click', function () { escolherTreino(b.chave); });
+      box.appendChild(el);
+    });
+
+    if (!box.children.length) box.innerHTML = '<p class="empty">Esta ficha ainda não tem treinos montados.</p>';
+
+    $('#pkDica').textContent = p.tipo === 'semanal'
+      ? 'Escolha qualquer treino desta ficha para fazer hoje.'
+      : 'Escolha qualquer treino da ficha. A rotação segue a partir do que você concluir.';
+    $('#pkVoltar').hidden = !trocado(iso);
+    $('#ovPick').hidden = false;
+  }
+
+  function fecharPicker() { $('#ovPick').hidden = true; }
+
+  function escolherTreino(chave) {
+    var iso = hojeISO();
+    S.trocas[iso] = chave;
+    if (S.logs[iso]) S.logs[iso].chave = chave;
+    salvar();
+    trData = null;
+    fecharPicker();
+    toast(chave === 'descanso' ? 'Dia marcado como descanso.' : 'Treino trocado.');
+    render();
+  }
+
+  $$('[data-trocar]').forEach(function (b) { b.addEventListener('click', abrirPicker); });
+  $('#pkFechar').addEventListener('click', fecharPicker);
+  $('#ovPick').addEventListener('click', function (e) { if (e.target === $('#ovPick')) fecharPicker(); });
+  $('#pkDescanso').addEventListener('click', function () { escolherTreino('descanso'); });
+  $('#pkVoltar').addEventListener('click', function () {
+    var iso = hojeISO();
+    delete S.trocas[iso];
+    if (S.logs[iso]) delete S.logs[iso].chave;
+    salvar();
+    trData = null;
+    fecharPicker();
+    toast('Voltou ao treino previsto.');
+    render();
+  });
 
   /* atualiza só os ✓ e as bordas, sem fechar o que está aberto */
   function renderTreinoCabecalhos() {

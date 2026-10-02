@@ -215,6 +215,8 @@ input:focus{outline:2px solid var(--acc-d);outline-offset:1px}
 
 /* editor: blocos e exercícios */
 .item.clic{cursor:pointer}
+.item.sel{border-color:var(--acc)}
+.item.sel b{color:var(--acc)}
 .item.vazio b{color:var(--mut);font-weight:500}
 .ordem{display:flex;gap:4px;align-items:center}
 .ordem button{

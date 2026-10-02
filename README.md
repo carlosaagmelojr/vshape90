@@ -26,6 +26,8 @@ Todos na **raiz** do repositório. Não vão em subpasta — a Vercel publica a 
 
 **Descanso.** Ao marcar uma série, o cronômetro do descanso daquele exercício dispara sozinho.
 
+**Trocar ou pular o treino.** *Trocar treino*, em Hoje ou na tela de treino, deixa fazer hoje qualquer treino da ficha — ou marcar o dia como descanso. A troca vale só para aquele dia e dá para desfazer com *Voltar ao treino previsto*. Numa ficha rotativa (ABCD), a sequência avança pelos treinos **concluídos**, não pelo calendário: pular um dia não embaralha a ordem.
+
 **Índice V.** Ombro ÷ cintura, com gráfico ao longo do tempo. É o número que mostra o formato V mudando — melhor que a balança.
 
 **Dois programas.** A Ficha V (45 dias, por dia da semana) e o programa prescrito ABCD (30 dias, rotativo). Trocável em Mais.

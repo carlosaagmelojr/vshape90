@@ -48,6 +48,7 @@
       <h2 id="hojeTreino">—</h2>
       <p class="muted sm" id="hojeNota"></p>
       <button class="btn primary big" id="btnIniciar">Iniciar treino</button>
+      <button class="btn ghost" data-trocar>Trocar o treino de hoje</button>
     </div>
 
     <div class="card" id="cardCorrida">
@@ -73,6 +74,7 @@
     <p class="eyebrow" id="trEyebrow">Treino</p>
     <h2 id="trNome">—</h2>
     <p class="muted sm" id="trNota"></p>
+    <button class="btn ghost" data-trocar>Trocar treino</button>
 
     <div id="trLista"></div>
 
@@ -211,6 +213,18 @@
       <button class="btn primary big" id="cadPlay">Começar</button>
       <button class="btn ghost" id="cadSom">Som: ligado</button>
     </div>
+  </div>
+</div>
+
+<!-- ───────────────────────── TROCAR TREINO ───────────────────────── -->
+<div class="overlay" id="ovPick" hidden>
+  <div class="formbox">
+    <button class="x" id="pkFechar" aria-label="Fechar">✕</button>
+    <p class="eyebrow">Treino de hoje</p>
+    <p class="muted sm" id="pkDica">Escolha qualquer treino desta ficha.</p>
+    <div id="pkLista" class="list"></div>
+    <button class="btn ghost" id="pkDescanso">Pular hoje — marcar como descanso</button>
+    <button class="btn ghost" id="pkVoltar" hidden>Voltar ao treino previsto</button>
   </div>
 </div>
 

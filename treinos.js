@@ -4,7 +4,7 @@
    padrao:   puxar | empurrar | isometrico | outro  (define o rótulo da fase de esforço)
 */
 window.TREINOS = {
-  versao: "2.0.0",
+  versao: "2.2.0",
   atualizado: "2026-10-02",
 
   cadencia: {
