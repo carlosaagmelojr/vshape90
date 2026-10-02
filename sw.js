@@ -1,7 +1,7 @@
 /* V-SHAPE — service worker
    Mude CACHE a cada publicação: é o que faz o celular pegar a versão nova.
 */
-var CACHE = 'vshape-v2.0.0';
+var CACHE = 'vshape-v2.1.0';
 
 var ARQUIVOS = [
   './',

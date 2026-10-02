@@ -24,6 +24,7 @@
       inicio: hojeISO(),
       programa: 'ficha-v',
       som: true,
+      fichas: {},    // fichas criadas por mim: id -> programa (mesmo formato dos prontos)
       logs: {},      // "YYYY-MM-DD": { treino, exercicios:{nome:[{carga,reps}]}, feito }
       corridas: [],  // { data, km, min }
       medidas: [],   // { data, peso, cintura, ombro }
@@ -78,7 +79,15 @@
     return Math.round((d2 - d1) / 86400000);
   }
 
-  function programa() { return T.programas[S.programa] || T.programas['ficha-v']; }
+  /* fichas prontas + minhas fichas, num mapa só */
+  function todasFichas() {
+    var m = {};
+    for (var a in T.programas) m[a] = T.programas[a];
+    for (var b in S.fichas) m[b] = S.fichas[b];
+    return m;
+  }
+  function minhaFicha(id) { return !!S.fichas[id]; }
+  function programa() { return todasFichas()[S.programa] || T.programas['ficha-v']; }
 
   function diaDoPlano() {
     return Math.max(1, Math.min(programa().duracao_dias, diasEntre(S.inicio, hojeISO()) + 1));
@@ -128,6 +137,8 @@
     if (atual === 'corrida') renderCorrida();
     if (atual === 'evolucao') renderEvolucao();
     if (atual === 'mais') renderMais();
+    if (atual === 'ficha') renderFicha();
+    if (atual === 'dia') renderDia();
   }
 
   function renderTopo() {
@@ -364,6 +375,42 @@
       el.querySelector('.exhead').addEventListener('click', function () { el.classList.toggle('open'); });
       box.appendChild(el);
     });
+
+    // adicionar exercício direto daqui
+    var bAdd = document.createElement('button');
+    bAdd.className = 'btn ghost';
+    bAdd.textContent = '+ Adicionar exercício a este treino';
+    bAdd.addEventListener('click', function () { adicionarNoTreinoDeHoje(); });
+    box.appendChild(bAdd);
+  }
+
+  /* Adicionar exercício ao treino de hoje.
+     Se a ficha for pronta (não editável), copia antes — a cópia vira a ficha ativa. */
+  function adicionarNoTreinoDeHoje() {
+    if (!trData) return;
+    if (!minhaFicha(S.programa)) {
+      if (!confirm('As fichas prontas não podem ser alteradas.\n\nCriar uma cópia editável desta ficha e continuar?')) return;
+      var novoId = duplicarFicha(S.programa);
+      S.programa = novoId;
+      salvar();
+      trData = null;
+      renderTreino();
+      toast('Cópia criada. Agora dá para editar.');
+    }
+    var p = programa();
+    var chave = chaveDoTreinoDeHoje(p);
+    if (chave === null) { toast('Não achei o treino de hoje nesta ficha.'); return; }
+    abrirFormEx(p.id, chave, -1, function () {
+      trData = null;
+      renderTreino();
+    });
+  }
+
+  /* onde fica, dentro da ficha, o treino de hoje */
+  function chaveDoTreinoDeHoje(p) {
+    if (p.tipo === 'semanal') return String(new Date(hojeISO() + 'T00:00:00').getDay());
+    var i = Math.max(0, diasEntre(S.inicio, hojeISO())) % p.sequencia.length;
+    return p.sequencia[i];
   }
 
   /* atualiza só os ✓ e as bordas, sem fechar o que está aberto */
@@ -713,13 +760,320 @@
     });
   }
 
+  /* ───────────── editor de fichas ───────────── */
+
+  var DIAS_NOME = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  var ORDEM_SEMANA = [1, 2, 3, 4, 5, 6, 0];
+
+  var CADENCIAS = [
+    { v: '3-1-1-1', d: 'Puxadas e remadas — pausa de 1 s com o cotovelo junto ao corpo' },
+    { v: '3-0-1-1', d: 'Elevação lateral e crucifixo — 1 s segurando no topo' },
+    { v: '2-1-1-0', d: 'Multiarticular pesado — descida controlada em 2 s' },
+    { v: '3-1-1-0', d: 'Padrão — solta em 3, segura 1 embaixo, sobe em 1' },
+    { v: '2-0-1-2', d: 'Face pull, elevação pélvica — 2 s de contração no fim' },
+    { v: '3-0-1-0', d: 'Simples — solta em 3, sobe em 1, sem pausas' }
+  ];
+
+  function clonar(o) { return JSON.parse(JSON.stringify(o)); }
+
+  function novoId() {
+    var id;
+    do { id = 'minha-' + Math.random().toString(36).slice(2, 8); } while (todasFichas()[id]);
+    return id;
+  }
+
+  function duplicarFicha(id) {
+    var p = clonar(todasFichas()[id]);
+    var novo = novoId();
+    p.id = novo;
+    p.nome = (p.nome.length > 28 ? p.nome.slice(0, 28) + '…' : p.nome) + ' (minha)';
+    p.resumo = 'Minha ficha, copiada de ' + (todasFichas()[id].nome);
+    S.fichas[novo] = p;
+    salvar();
+    return novo;
+  }
+
+  function criarFichaVazia() {
+    var id = novoId();
+    var semana = {};
+    ORDEM_SEMANA.forEach(function (d) {
+      semana[d] = { id: 'd' + d, nome: '', foco: '', exercicios: [] };
+    });
+    S.fichas[id] = {
+      id: id,
+      nome: 'Minha ficha',
+      resumo: 'Ficha criada por mim',
+      duracao_dias: 45,
+      tipo: 'semanal',
+      semana: semana
+    };
+    salvar();
+    return id;
+  }
+
+  /* lista de blocos (dias ou treinos) de uma ficha */
+  function blocos(p) {
+    if (p.tipo === 'semanal') {
+      return ORDEM_SEMANA.map(function (d) {
+        return { chave: String(d), rotulo: DIAS_NOME[d], treino: p.semana[d] };
+      });
+    }
+    return p.sequencia.map(function (k) {
+      return { chave: k, rotulo: 'Treino ' + k, treino: p.treinos[k] };
+    });
+  }
+
+  function trDe(p, chave) {
+    return p.tipo === 'semanal' ? p.semana[chave] : p.treinos[chave];
+  }
+
+  var edit = { ficha: null, chave: null };
+
+  function abrirFicha(id) {
+    edit.ficha = id;
+    ir('ficha');
+  }
+
+  function renderFicha() {
+    var p = S.fichas[edit.ficha];
+    if (!p) { ir('mais'); return; }
+
+    $('#fiNome').value = p.nome;
+    $('#fiTipo').textContent = p.tipo === 'semanal'
+      ? 'Por dia da semana. Toque num dia para montar o treino.'
+      : 'Rotativa: os treinos se alternam na ordem abaixo, um por dia.';
+    $('#fiAddTreino').hidden = p.tipo !== 'rotativo';
+
+    var box = $('#fiBlocos');
+    box.innerHTML = '';
+    blocos(p).forEach(function (b) {
+      var t = b.treino, n = (t && t.exercicios) ? t.exercicios.length : 0;
+      var el = document.createElement('div');
+      el.className = 'item clic' + (n ? '' : ' vazio');
+      var titulo = (t && t.nome) ? t.nome : (n ? '(sem nome)' : 'Descanso');
+      el.innerHTML = '<div><b></b><small>' + b.rotulo + ' · ' +
+        (n ? n + (n === 1 ? ' exercício' : ' exercícios') : 'nenhum exercício') + '</small></div><span class="muted">›</span>';
+      el.querySelector('b').textContent = titulo;
+      el.addEventListener('click', function () { edit.chave = b.chave; ir('dia'); });
+      box.appendChild(el);
+    });
+  }
+
+  $('#fiNome').addEventListener('change', function () {
+    var p = S.fichas[edit.ficha];
+    if (!p) return;
+    p.nome = $('#fiNome').value.trim() || 'Minha ficha';
+    salvar();
+    renderTopo();
+  });
+
+  $('#fiAddTreino').addEventListener('click', function () {
+    var p = S.fichas[edit.ficha];
+    if (!p || p.tipo !== 'rotativo') return;
+    var letras = 'ABCDEFGH'.split('');
+    var nova = letras.find(function (l) { return p.sequencia.indexOf(l) < 0; });
+    if (!nova) { toast('Limite de 8 treinos.'); return; }
+    p.sequencia.push(nova);
+    p.treinos[nova] = { id: nova, nome: 'Treino ' + nova, foco: '', exercicios: [] };
+    salvar();
+    renderFicha();
+  });
+
+  $('#fiUsar').addEventListener('click', function () {
+    S.programa = edit.ficha;
+    salvar();
+    trData = null;
+    toast('Ficha ativada.');
+    ir('hoje');
+  });
+
+  $('#fiVoltar').addEventListener('click', function () { ir('mais'); });
+
+  /* ── editor de um treino ── */
+
+  function renderDia() {
+    var p = S.fichas[edit.ficha];
+    if (!p) { ir('mais'); return; }
+    var t = trDe(p, edit.chave);
+    if (!t) { ir('ficha'); return; }
+
+    var rotulo = p.tipo === 'semanal' ? DIAS_NOME[Number(edit.chave)] : 'Treino ' + edit.chave;
+    $('#diEyebrow').textContent = p.nome + ' · ' + rotulo;
+    $('#diNome').value = t.nome || '';
+
+    var box = $('#diLista');
+    box.innerHTML = '';
+    if (!t.exercicios.length) {
+      box.innerHTML = '<p class="empty">Nenhum exercício. Este dia conta como descanso.</p>';
+      return;
+    }
+    t.exercicios.forEach(function (ex, i) {
+      var alvo = ex.duracao ? (ex.duracao + ' s') : (ex.min === ex.max ? ex.min + ' reps' : ex.min + '–' + ex.max + ' reps');
+      var el = document.createElement('div');
+      el.className = 'item';
+      el.innerHTML =
+        '<div style="flex:1;min-width:0"><b></b><small>' + ex.series + ' × ' + alvo +
+        ' · ' + ex.descanso + ' s' +
+        '<span class="badge">' + (ex.cadencia === 'isometrico' ? 'ISO' : ex.cadencia) + '</span></small></div>' +
+        '<div class="ordem">' +
+          '<button class="sobe" aria-label="Subir">↑</button>' +
+          '<button class="desce" aria-label="Descer">↓</button>' +
+          '<button class="edita" aria-label="Editar">✎</button>' +
+        '</div>';
+      el.querySelector('b').textContent = ex.nome;
+      el.querySelector('.sobe').disabled = i === 0;
+      el.querySelector('.desce').disabled = i === t.exercicios.length - 1;
+      el.querySelector('.sobe').addEventListener('click', function () {
+        t.exercicios.splice(i - 1, 0, t.exercicios.splice(i, 1)[0]); salvar(); renderDia();
+      });
+      el.querySelector('.desce').addEventListener('click', function () {
+        t.exercicios.splice(i + 1, 0, t.exercicios.splice(i, 1)[0]); salvar(); renderDia();
+      });
+      el.querySelector('.edita').addEventListener('click', function () {
+        abrirFormEx(p.id, edit.chave, i, renderDia);
+      });
+      box.appendChild(el);
+    });
+  }
+
+  $('#diNome').addEventListener('change', function () {
+    var p = S.fichas[edit.ficha];
+    if (!p) return;
+    var t = trDe(p, edit.chave);
+    if (!t) return;
+    t.nome = $('#diNome').value.trim();
+    salvar();
+    trData = null;
+  });
+
+  $('#diAdd').addEventListener('click', function () {
+    abrirFormEx(edit.ficha, edit.chave, -1, renderDia);
+  });
+
+  $('#diVoltar').addEventListener('click', function () { ir('ficha'); });
+
+  /* ── formulário de exercício ── */
+
+  var form = { ficha: null, chave: null, idx: -1, medida: 'reps', padrao: 'puxar', cadencia: '3-1-1-1', depois: null };
+
+  function abrirFormEx(fichaId, chave, idx, depois) {
+    var p = S.fichas[fichaId];
+    if (!p) { toast('Esta ficha não é editável.'); return; }
+    form.ficha = fichaId; form.chave = chave; form.idx = idx; form.depois = depois || function () {};
+
+    var t = trDe(p, chave);
+    var ex = idx >= 0 ? t.exercicios[idx] : null;
+
+    $('#exTitulo').textContent = ex ? 'Editar exercício' : 'Novo exercício';
+    $('#exNome').value = ex ? ex.nome : '';
+    $('#exSeries').value = ex ? ex.series : 3;
+    $('#exDesc').value = ex ? ex.descanso : 60;
+    form.medida = (ex && ex.duracao) ? 'tempo' : 'reps';
+    $('#exMin').value = ex && ex.min != null ? ex.min : 8;
+    $('#exMax').value = ex && ex.max != null ? ex.max : 12;
+    $('#exDuracao').value = ex && ex.duracao ? ex.duracao : 45;
+    form.padrao = ex ? (ex.padrao === 'isometrico' ? 'outro' : ex.padrao) : 'puxar';
+    form.cadencia = (ex && ex.cadencia !== 'isometrico') ? ex.cadencia : '3-1-1-1';
+
+    // chips de cadência
+    var bc = $('#exCad');
+    bc.innerHTML = '';
+    CADENCIAS.forEach(function (c) {
+      var b = document.createElement('button');
+      b.className = 'chip cadchip';
+      b.textContent = c.v;
+      b.dataset.cad = c.v;
+      b.addEventListener('click', function () { form.cadencia = c.v; pintaForm(); });
+      bc.appendChild(b);
+    });
+
+    $('#exApagar').hidden = idx < 0;
+    pintaForm();
+    $('#ovEx').hidden = false;
+    $('#exNome').focus();
+  }
+
+  function pintaForm() {
+    $$('#exMedida .chip').forEach(function (c) { c.classList.toggle('on', c.dataset.med === form.medida); });
+    $$('#exPadrao .chip').forEach(function (c) { c.classList.toggle('on', c.dataset.pad === form.padrao); });
+    $$('#exCad .chip').forEach(function (c) { c.classList.toggle('on', c.dataset.cad === form.cadencia); });
+    $('#boxReps').hidden = form.medida !== 'reps';
+    $('#boxDur').hidden = form.medida !== 'tempo';
+    var ehTempo = form.medida === 'tempo';
+    $('#exCad').style.display = ehTempo ? 'none' : '';
+    $('#exPadrao').style.display = ehTempo ? 'none' : '';
+    var c = CADENCIAS.filter(function (x) { return x.v === form.cadencia; })[0];
+    $('#exCadDesc').textContent = ehTempo ? 'Isométrico: o app vira cronômetro.' : (c ? c.d : '');
+  }
+
+  $$('#exMedida .chip').forEach(function (c) {
+    c.addEventListener('click', function () { form.medida = c.dataset.med; pintaForm(); });
+  });
+  $$('#exPadrao .chip').forEach(function (c) {
+    c.addEventListener('click', function () { form.padrao = c.dataset.pad; pintaForm(); });
+  });
+
+  function fecharFormEx() { $('#ovEx').hidden = true; }
+  $('#exFechar').addEventListener('click', fecharFormEx);
+  $('#ovEx').addEventListener('click', function (e) { if (e.target === $('#ovEx')) fecharFormEx(); });
+
+  $('#exSalvar').addEventListener('click', function () {
+    var p = S.fichas[form.ficha];
+    if (!p) return;
+    var t = trDe(p, form.chave);
+    if (!t) return;
+
+    var nome = $('#exNome').value.trim();
+    if (!nome) { toast('Dê um nome ao exercício.'); return; }
+
+    var series = Math.max(1, Math.min(10, num($('#exSeries').value) || 3));
+    var desc = Math.max(10, Math.min(600, num($('#exDesc').value) || 60));
+
+    var ex = { nome: nome, series: series, descanso: desc };
+
+    if (form.medida === 'tempo') {
+      ex.duracao = Math.max(5, Math.min(600, num($('#exDuracao').value) || 45));
+      ex.cadencia = 'isometrico';
+      ex.padrao = 'isometrico';
+    } else {
+      var mn = Math.max(1, Math.min(100, num($('#exMin').value) || 8));
+      var mx = Math.max(mn, Math.min(100, num($('#exMax').value) || mn));
+      ex.min = mn; ex.max = mx;
+      ex.cadencia = form.cadencia;
+      ex.padrao = form.padrao;
+    }
+
+    if (form.idx >= 0) t.exercicios[form.idx] = ex;
+    else t.exercicios.push(ex);
+
+    if (!t.nome) t.nome = 'Treino';
+    salvar();
+    trData = null;
+    fecharFormEx();
+    toast(form.idx >= 0 ? 'Exercício atualizado.' : 'Exercício adicionado.');
+    form.depois();
+  });
+
+  $('#exApagar').addEventListener('click', function () {
+    var p = S.fichas[form.ficha];
+    if (!p || form.idx < 0) return;
+    if (!confirm('Apagar este exercício?')) return;
+    trDe(p, form.chave).exercicios.splice(form.idx, 1);
+    salvar();
+    trData = null;
+    fecharFormEx();
+    toast('Exercício apagado.');
+    form.depois();
+  });
+
   /* ───────────── mais ───────────── */
 
   function renderMais() {
+    var todas = todasFichas();
     var box = $('#progChips');
     box.innerHTML = '';
-    Object.keys(T.programas).forEach(function (id) {
-      var p = T.programas[id];
+    Object.keys(todas).forEach(function (id) {
+      var p = todas[id];
       var b = document.createElement('button');
       b.className = 'chip' + (id === S.programa ? ' on' : '');
       b.textContent = p.nome;
@@ -727,12 +1081,42 @@
         S.programa = id;
         salvar();
         trData = null;
-        toast('Programa alterado.');
+        toast('Ficha alterada.');
         renderMais(); renderTopo();
       });
       box.appendChild(b);
     });
-    $('#progResumo').textContent = programa().resumo + (programa().principio ? ' — ' + programa().principio : '');
+    $('#progResumo').textContent = (programa().resumo || '') + (programa().principio ? ' — ' + programa().principio : '');
+
+    // minhas fichas
+    var mf = $('#minhasFichas');
+    mf.innerHTML = '';
+    var ids = Object.keys(S.fichas);
+    if (!ids.length) {
+      mf.innerHTML = '<p class="empty">Você ainda não tem fichas próprias.</p>';
+    } else {
+      ids.forEach(function (id) {
+        var p = S.fichas[id];
+        var qtd = blocos(p).reduce(function (s, b) { return s + ((b.treino && b.treino.exercicios) ? b.treino.exercicios.length : 0); }, 0);
+        var el = document.createElement('div');
+        el.className = 'item';
+        el.innerHTML = '<div style="flex:1;min-width:0"><b></b><small>' + qtd + ' exercícios' +
+          (id === S.programa ? ' · em uso' : '') + '</small></div>' +
+          '<div class="ordem"><button class="edita" aria-label="Editar">✎</button>' +
+          '<button class="apaga" aria-label="Apagar">✕</button></div>';
+        el.querySelector('b').textContent = p.nome;
+        el.querySelector('.edita').addEventListener('click', function () { abrirFicha(id); });
+        el.querySelector('.apaga').addEventListener('click', function () {
+          if (!confirm('Apagar a ficha "' + p.nome + '"? Os treinos já registrados continuam salvos.')) return;
+          delete S.fichas[id];
+          if (S.programa === id) S.programa = 'ficha-v';
+          salvar(); trData = null;
+          toast('Ficha apagada.');
+          renderMais(); renderTopo();
+        });
+        mf.appendChild(el);
+      });
+    }
 
     $('#cadNotacao').textContent = 'Quatro números: ' + T.cadencia.notacao + '. Padrão da ficha: ' + T.cadencia.padrao + '.';
     var ul = $('#cadRegras');
@@ -748,6 +1132,20 @@
     $('#verInfo').textContent = 'V-SHAPE · dados v' + S.versao + ' · treinos v' + T.versao +
       ' · início ' + dataCurta(S.inicio);
   }
+
+  $('#btnDuplicar').addEventListener('click', function () {
+    var id = duplicarFicha(S.programa);
+    S.programa = id;
+    salvar();
+    trData = null;
+    toast('Cópia criada.');
+    abrirFicha(id);
+  });
+
+  $('#btnNovaFicha').addEventListener('click', function () {
+    var id = criarFichaVazia();
+    abrirFicha(id);
+  });
 
   $('#btnExportar').addEventListener('click', function () {
     var blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });

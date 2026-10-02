@@ -30,7 +30,11 @@ Todos na **raiz** do repositório. Não vão em subpasta — a Vercel publica a 
 
 **Dois programas.** A Ficha V (45 dias, por dia da semana) e o programa prescrito ABCD (30 dias, rotativo). Trocável em Mais.
 
-**Backup.** Exportar e importar JSON em Mais. Exporte de vez em quando: os dados vivem só neste aparelho.
+**Fichas próprias.** Em Mais dá para copiar uma ficha pronta e editar a cópia, ou criar uma do zero. No editor você monta cada dia da semana: nome do treino e lista de exercícios, com séries, faixa de repetições (ou tempo, para isométricos), descanso, cadência e tipo de movimento. Dá para reordenar, editar e apagar. Dia sem exercício nenhum conta como descanso.
+
+Na tela de treino há um botão para acrescentar exercício no treino do dia. Se a ficha ativa for uma das prontas, o app oferece criar uma cópia editável antes — as prontas nunca são alteradas.
+
+**Backup.** Exportar e importar JSON em Mais. O arquivo leva tudo: registros, medidas, corridas e as fichas que você criou. Exporte de vez em quando — os dados vivem só neste aparelho.
 
 ## Publicar
 
@@ -48,7 +52,7 @@ Se ainda aparecer a versão velha: no computador, Ctrl+Shift+R. No celular, remo
 
 ## Mudar os treinos
 
-Tudo em `treinos.js`. Um exercício é assim:
+Para mudanças do dia a dia, use o editor dentro do app (Mais → Minhas fichas). Mexer no código só é necessário para alterar as fichas **prontas**, que ficam em `treinos.js`. Um exercício é assim:
 
 ```js
 { nome: "Puxada aberta", series: 4, min: 8, max: 12, descanso: 90, cadencia: "3-1-1-1", padrao: "puxar" }

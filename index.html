@@ -139,6 +139,14 @@
       <p class="muted sm" id="cadResp"></p>
     </div>
 
+    <h3 class="sechead">Minhas fichas</h3>
+    <div class="card">
+      <div id="minhasFichas" class="list"></div>
+      <button class="btn primary" id="btnDuplicar">Copiar a ficha atual para editar</button>
+      <button class="btn ghost" id="btnNovaFicha">Criar ficha do zero</button>
+      <p class="muted sm">As fichas prontas não podem ser alteradas. Copie uma e edite a cópia à vontade.</p>
+    </div>
+
     <h3 class="sechead">Dados</h3>
     <div class="card">
       <button class="btn ghost" id="btnExportar">Exportar meus dados</button>
@@ -148,6 +156,37 @@
     </div>
 
     <p class="muted sm center" id="verInfo"></p>
+  </section>
+
+  <!-- ───────────────────────── EDITOR: FICHA ───────────────────────── -->
+  <section class="view" id="view-ficha">
+    <p class="eyebrow">Editar ficha</p>
+    <div class="card">
+      <label>Nome da ficha<input type="text" id="fiNome" placeholder="Minha ficha"></label>
+      <p class="muted sm" id="fiTipo"></p>
+    </div>
+
+    <h3 class="sechead" id="fiCab">Treinos</h3>
+    <div id="fiBlocos" class="list"></div>
+    <button class="btn ghost" id="fiAddTreino" hidden>+ Adicionar treino</button>
+
+    <button class="btn primary" id="fiUsar">Usar esta ficha</button>
+    <button class="btn ghost" id="fiVoltar">Voltar</button>
+  </section>
+
+  <!-- ───────────────────────── EDITOR: TREINO ───────────────────────── -->
+  <section class="view" id="view-dia">
+    <p class="eyebrow" id="diEyebrow">—</p>
+    <div class="card">
+      <label>Nome do treino<input type="text" id="diNome" placeholder="Ex.: Dorsal largura + bíceps"></label>
+      <p class="muted sm" id="diDica">Deixe sem exercícios para marcar o dia como descanso.</p>
+    </div>
+
+    <h3 class="sechead">Exercícios</h3>
+    <div id="diLista" class="list"></div>
+
+    <button class="btn primary" id="diAdd">+ Adicionar exercício</button>
+    <button class="btn ghost" id="diVoltar">Voltar</button>
   </section>
 </main>
 
@@ -172,6 +211,49 @@
       <button class="btn primary big" id="cadPlay">Começar</button>
       <button class="btn ghost" id="cadSom">Som: ligado</button>
     </div>
+  </div>
+</div>
+
+<!-- ───────────────────────── FORMULÁRIO DE EXERCÍCIO ───────────────────────── -->
+<div class="overlay" id="ovEx" hidden>
+  <div class="formbox">
+    <button class="x" id="exFechar" aria-label="Fechar">✕</button>
+    <p class="eyebrow" id="exTitulo">Novo exercício</p>
+
+    <label>Nome<input type="text" id="exNome" placeholder="Ex.: Puxada aberta"></label>
+
+    <div class="row2">
+      <label>Séries<input type="number" id="exSeries" inputmode="numeric" value="3"></label>
+      <label>Descanso (s)<input type="number" id="exDesc" inputmode="numeric" value="60"></label>
+    </div>
+
+    <p class="flab">Medida</p>
+    <div class="chips" id="exMedida">
+      <button class="chip on" data-med="reps">Repetições</button>
+      <button class="chip" data-med="tempo">Tempo (isométrico)</button>
+    </div>
+
+    <div class="row2" id="boxReps">
+      <label>Reps mín<input type="number" id="exMin" inputmode="numeric" value="8"></label>
+      <label>Reps máx<input type="number" id="exMax" inputmode="numeric" value="12"></label>
+    </div>
+    <div id="boxDur" hidden>
+      <label>Duração (s)<input type="number" id="exDuracao" inputmode="numeric" value="45"></label>
+    </div>
+
+    <p class="flab">Movimento</p>
+    <div class="chips" id="exPadrao">
+      <button class="chip" data-pad="puxar">Puxar</button>
+      <button class="chip" data-pad="empurrar">Empurrar</button>
+      <button class="chip" data-pad="outro">Outro</button>
+    </div>
+
+    <p class="flab">Cadência</p>
+    <div class="chips" id="exCad"></div>
+    <p class="muted sm" id="exCadDesc">—</p>
+
+    <button class="btn primary" id="exSalvar">Salvar exercício</button>
+    <button class="btn danger" id="exApagar" hidden>Apagar exercício</button>
   </div>
 </div>
 
