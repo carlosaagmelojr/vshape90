@@ -1,0 +1,218 @@
+{
+  "versao": "1.0.0",
+  "atualizado_em": "2026-10-02",
+  "cadencia": {
+    "notacao": "excentrica-pausa_alongamento-concentrica-pausa_contracao (segundos)",
+    "padrao": "3-1-1-0",
+    "regras": [
+      { "tipo": "puxada_remada", "cadencia": "3-1-1-1", "nota": "pausa de 1s com o cotovelo junto ao corpo" },
+      { "tipo": "isolador_deltoide", "cadencia": "3-0-1-1", "nota": "1s de pausa no topo; carga menor" },
+      { "tipo": "multiarticular_pesado", "cadencia": "2-1-1-0", "nota": "descida controlada em 2s" }
+    ],
+    "respiracao": "solta o ar na fase de esforco, puxa o ar na fase de retorno",
+    "descanso_seg": { "isoladores": [60, 90], "pesados_6_10_reps": [120, 180] }
+  },
+
+  "programas": [
+    {
+      "id": "v-shape-fase1-base",
+      "nome": "V-Shape Fase 1 — Base",
+      "origem": "prescrito",
+      "categoria": "C — Sobrepeso",
+      "objetivo": "recomposicao",
+      "duracao_semanas": 4,
+      "divisao": "ABCD",
+      "frequencia_indicada": "4x/semana (cabecalho) — a pagina de metodologia diz 5x/semana",
+      "metodologia_declarada": {
+        "series": "3 a 4",
+        "reps": "8 a 12",
+        "descanso_seg": [60, 90],
+        "carga": "moderada a pesada em compostos",
+        "cardio": "3 sessoes/semana, 25 a 35 min, moderado",
+        "progressao": "so sobe carga apos completar todas as reps com forma impecavel por 2 treinos seguidos"
+      },
+      "prescricao_das_fichas": {
+        "series": 3,
+        "reps": 15,
+        "descanso_seg": 45,
+        "nota": "contradiz a metodologia declarada acima"
+      },
+      "resolucao_sugerida": {
+        "compostos": { "series": "3-4", "reps": "8-12", "descanso_seg": [60, 90] },
+        "isoladores_e_maquinas": { "series": 3, "reps": "15-20", "descanso_seg": 45 }
+      },
+      "padrao_sessao": {
+        "aquecimento": "20 min de bike",
+        "core": "3 x 30s de prancha isometrica",
+        "execucao": "movimento consciente e cadenciado",
+        "finalizar": "10 min de escada, bike ou transport"
+      },
+      "treinos": [
+        {
+          "id": "A",
+          "rotulo_original": "UPPER 1 — TREINO A",
+          "foco": "dorsal e ombro",
+          "exercicios": [
+            { "ordem": 1, "nome": "Prancha isometrica", "series": 3, "duracao_seg": 30, "descanso_seg": 45, "cadencia": "isometrico", "tipo": "core" },
+            { "ordem": 2, "nome": "Puxada aberta frente", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-1-1-1", "tipo": "composto" },
+            { "ordem": 3, "nome": "Remada aberta maquina", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-1-1-1", "tipo": "composto" },
+            { "ordem": 4, "nome": "Remada serrote", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-1-1-1", "tipo": "composto" },
+            { "ordem": 5, "nome": "Desenvolvimento halteres", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "2-1-1-0", "tipo": "composto" },
+            { "ordem": 6, "nome": "Elevacao lateral + crucifixo maquina", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-0-1-1", "tipo": "isolador", "biset": true },
+            { "ordem": 7, "nome": "Supino maquina", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-1-1-0", "tipo": "composto" },
+            { "ordem": 8, "nome": "Abdominal remador", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "2-0-1-1", "tipo": "core" }
+          ]
+        },
+        {
+          "id": "B",
+          "rotulo_original": "LOWER 1 — TREINO B",
+          "foco": "pernas",
+          "exercicios": [
+            { "ordem": 1, "nome": "Prancha isometrica", "series": 3, "duracao_seg": 30, "descanso_seg": 45, "cadencia": "isometrico", "tipo": "core" },
+            { "ordem": 2, "nome": "Cadeira extensora", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-0-1-1", "tipo": "isolador" },
+            { "ordem": 3, "nome": "Leg press 45 pes afastados", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-1-1-0", "tipo": "composto" },
+            { "ordem": 4, "nome": "Agachamento Smith ou leg horizontal", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-1-1-0", "tipo": "composto" },
+            { "ordem": 5, "nome": "Cadeira flexora", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-1-1-1", "tipo": "isolador" },
+            { "ordem": 6, "nome": "Cadeira abdutora", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "2-0-1-1", "tipo": "isolador" },
+            { "ordem": 7, "nome": "Cadeira adutora", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "2-0-1-1", "tipo": "isolador" },
+            { "ordem": 8, "nome": "Extensao de coluna banco 45", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-0-1-1", "tipo": "isolador" }
+          ]
+        },
+        {
+          "id": "C",
+          "rotulo_original": "UPPER 2 — TREINO C",
+          "foco": "peito e ombro",
+          "exercicios": [
+            { "ordem": 1, "nome": "Prancha isometrica", "series": 3, "duracao_seg": 30, "descanso_seg": 45, "cadencia": "isometrico", "tipo": "core" },
+            { "ordem": 2, "nome": "Supino inclinado com halteres", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "2-1-1-0", "tipo": "composto" },
+            { "ordem": 3, "nome": "Supino maquina", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-1-1-0", "tipo": "composto" },
+            { "ordem": 4, "nome": "Supino reto no smith", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "2-1-1-0", "tipo": "composto" },
+            { "ordem": 5, "nome": "Desenvolvimento halteres", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "2-1-1-0", "tipo": "composto" },
+            { "ordem": 6, "nome": "Elevacao lateral + puxada frente supinada", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-0-1-1", "tipo": "isolador", "biset": true },
+            { "ordem": 7, "nome": "Remada maquina neutra", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-1-1-1", "tipo": "composto" },
+            { "ordem": 8, "nome": "Abdominal remador", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "2-0-1-1", "tipo": "core" }
+          ]
+        },
+        {
+          "id": "D",
+          "rotulo_original": "UPPER 2 — TREINO D",
+          "foco": "pernas",
+          "nota": "rotulado como Upper 2, mas e inteiramente de pernas; compartilha 6 dos 8 exercicios com o Treino B",
+          "exercicios": [
+            { "ordem": 1, "nome": "Prancha isometrica", "series": 3, "duracao_seg": 30, "descanso_seg": 45, "cadencia": "isometrico", "tipo": "core" },
+            { "ordem": 2, "nome": "Cadeira flexora", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-1-1-1", "tipo": "isolador" },
+            { "ordem": 3, "nome": "Elevacao pelvica", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "2-0-1-2", "tipo": "composto" },
+            { "ordem": 4, "nome": "Agachamento Smith ou leg horizontal", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-1-1-0", "tipo": "composto" },
+            { "ordem": 5, "nome": "Cadeira extensora", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-0-1-1", "tipo": "isolador" },
+            { "ordem": 6, "nome": "Cadeira abdutora", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "2-0-1-1", "tipo": "isolador" },
+            { "ordem": 7, "nome": "Cadeira adutora", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "2-0-1-1", "tipo": "isolador" },
+            { "ordem": 8, "nome": "Extensao de coluna banco 45", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-0-1-1", "tipo": "isolador" }
+          ]
+        }
+      ],
+      "observacoes": [
+        "A pagina de metodologia e as fichas de exercicio nao combinam (8-12 reps / 60-90s vs 15 reps / 45s).",
+        "Treino B e Treino D compartilham 6 dos 8 exercicios — metade da semana e perna.",
+        "Dorsal e deltoide recebem estimulo apenas 1x por semana cada."
+      ]
+    },
+
+    {
+      "id": "ficha-v-academia-crossfit",
+      "nome": "Ficha V-Shape — Academia + CrossFit (45 dias)",
+      "origem": "montado_para_rotina_atual",
+      "contexto": "academia de manha ou no almoco (45-50 min) + CrossFit a noite, seg a sex; academia no sabado; corrida 5 km no domingo",
+      "principio": "nao repetir na academia o que o CrossFit ja faz; perna pesada so no sabado",
+      "treinos": [
+        {
+          "id": "seg",
+          "nome": "Dorsal largura + biceps",
+          "exercicios": [
+            { "ordem": 1, "nome": "Puxada aberta", "series": 4, "reps": "8-12", "descanso_seg": 90, "cadencia": "3-1-1-1" },
+            { "ordem": 2, "nome": "Pulldown braco reto", "series": 3, "reps": "12-15", "descanso_seg": 60, "cadencia": "3-0-1-1" },
+            { "ordem": 3, "nome": "Remada unilateral", "series": 3, "reps": "10-12", "descanso_seg": 75, "cadencia": "3-1-1-1" },
+            { "ordem": 4, "nome": "Rosca direta", "series": 3, "reps": 10, "descanso_seg": 60, "cadencia": "3-0-1-0" }
+          ]
+        },
+        {
+          "id": "ter",
+          "nome": "Ombro + peito superior",
+          "exercicios": [
+            { "ordem": 1, "nome": "Desenvolvimento halteres", "series": 3, "reps": "8-10", "descanso_seg": 120, "cadencia": "2-1-1-0" },
+            { "ordem": 2, "nome": "Elevacao lateral", "series": 5, "reps": "12-20", "descanso_seg": 60, "cadencia": "3-0-1-1" },
+            { "ordem": 3, "nome": "Supino inclinado", "series": 3, "reps": "8-12", "descanso_seg": 120, "cadencia": "2-1-1-0" },
+            { "ordem": 4, "nome": "Crossover baixo para alto", "series": 3, "reps": "12-15", "descanso_seg": 60, "cadencia": "3-0-1-1" }
+          ]
+        },
+        {
+          "id": "qua",
+          "nome": "Costas espessura + deltoide posterior",
+          "exercicios": [
+            { "ordem": 1, "nome": "Remada cavalinho", "series": 4, "reps": "8-12", "descanso_seg": 90, "cadencia": "3-1-1-1" },
+            { "ordem": 2, "nome": "Puxada neutra", "series": 3, "reps": "10-12", "descanso_seg": 90, "cadencia": "3-1-1-1" },
+            { "ordem": 3, "nome": "Crucifixo inverso", "series": 4, "reps": "15-20", "descanso_seg": 60, "cadencia": "3-0-1-1" },
+            { "ordem": 4, "nome": "Face pull", "series": 3, "reps": 15, "descanso_seg": 60, "cadencia": "2-0-1-2" }
+          ]
+        },
+        {
+          "id": "qui",
+          "nome": "Ombro + bracos",
+          "exercicios": [
+            { "ordem": 1, "nome": "Elevacao lateral halteres", "series": 5, "reps": "12-20", "descanso_seg": 60, "cadencia": "3-0-1-1" },
+            { "ordem": 2, "nome": "Elevacao lateral no cabo", "series": 3, "reps": 15, "descanso_seg": 60, "cadencia": "3-0-1-1" },
+            { "ordem": 3, "nome": "Rosca Scott", "series": 3, "reps": "10-12", "descanso_seg": 60, "cadencia": "3-1-1-0" },
+            { "ordem": 4, "nome": "Triceps corda", "series": 3, "reps": 12, "descanso_seg": 60, "cadencia": "3-0-1-1" }
+          ]
+        },
+        {
+          "id": "sex",
+          "nome": "V pump (leve)",
+          "nota": "dia curto e de baixa carga, apos quatro noites de CrossFit",
+          "exercicios": [
+            { "ordem": 1, "nome": "Puxada", "series": 3, "reps": 12, "descanso_seg": 60, "cadencia": "3-1-1-1" },
+            { "ordem": 2, "nome": "Elevacao lateral", "series": 4, "reps": "15-20", "descanso_seg": 45, "cadencia": "3-0-1-1" },
+            { "ordem": 3, "nome": "Crucifixo inverso", "series": 3, "reps": 15, "descanso_seg": 45, "cadencia": "3-0-1-1" },
+            { "ordem": 4, "nome": "Pullover no cabo", "series": 3, "reps": 15, "descanso_seg": 60, "cadencia": "3-1-1-1" }
+          ]
+        },
+        {
+          "id": "sab",
+          "nome": "Pernas + core",
+          "nota": "sem CrossFit a noite — unico dia de perna pesada",
+          "exercicios": [
+            { "ordem": 1, "nome": "Hack ou agachamento", "series": 4, "reps": "8-12", "descanso_seg": 180, "cadencia": "3-1-1-0" },
+            { "ordem": 2, "nome": "Flexora", "series": 4, "reps": "10-15", "descanso_seg": 75, "cadencia": "3-1-1-1" },
+            { "ordem": 3, "nome": "Bulgaro", "series": 3, "reps": "10 por perna", "descanso_seg": 90, "cadencia": "3-1-1-0" },
+            { "ordem": 4, "nome": "Panturrilha", "series": 4, "reps": 15, "descanso_seg": 45, "cadencia": "2-2-1-1" },
+            { "ordem": 5, "nome": "Prancha", "series": 3, "duracao_seg": 45, "descanso_seg": 45, "cadencia": "isometrico" }
+          ]
+        },
+        {
+          "id": "dom",
+          "nome": "Corrida",
+          "exercicios": [
+            { "ordem": 1, "nome": "Corrida 5 km", "ritmo": "confortavel, em que consiga conversar" }
+          ]
+        }
+      ],
+      "progressao": {
+        "metodo": "dupla progressao",
+        "regra": "subir reps ate o topo da faixa em todas as series com a cadencia correta, depois aumentar a carga e voltar ao piso da faixa",
+        "limite": "se a cadencia quebra, a carga esta alta demais",
+        "ciclo_semanas": [
+          { "semanas": "1-2", "academia": "terminar com 2-3 reps sobrando", "crossfit": "intensidade moderada", "objetivo": "fixar cadencia e adaptar ao volume" },
+          { "semanas": "3-4", "academia": "dupla progressao em todos os exercicios", "crossfit": "intensidade normal", "objetivo": "progressao de carga" },
+          { "semanas": "5", "academia": "~40% menos series", "crossfit": "so 3 noites", "objetivo": "descarga" },
+          { "semanas": "6", "academia": "voltar a apertar, 1-2 reps sobrando", "crossfit": "intensidade normal", "objetivo": "fechar os 45 dias" }
+        ],
+        "regra_semanal": "tirar uma noite de CrossFit por semana (quarta e a melhor) para mobilidade ou descanso"
+      },
+      "metricas": [
+        { "nome": "cintura", "cadencia": "semanal", "protocolo": "na altura do umbigo, em jejum" },
+        { "nome": "fotos", "cadencia": "a cada 15 dias", "protocolo": "mesma luz e mesma posicao" },
+        { "nome": "bioimpedancia", "cadencia": "dias 0 e 45" },
+        { "nome": "v_shape_index", "formula": "ombro / cintura", "nota": "melhor indicador do formato V" }
+      ]
+    }
+  ]
+}
